@@ -17,15 +17,6 @@ type Deputy = {
   photoUrl: string;
 };
 
-function hashStringToSeed(value: string) {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return hash >>> 0;
-}
-
 function seededRandom(seed: number) {
   let t = seed + 0x6d2b79f5;
   t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -48,10 +39,19 @@ function getBlocForParty(party: Party) {
 
 export default function Home() {
   const { guesses, addGuess } = useGame();
-  const [seed] = useState(() => Math.floor(Math.random() * 1000000));
+  const [clientSeed, setClientSeed] = useState<number | null>(null);
+  
+  useEffect(() => {
+    // Initialize random seed once on client mount to avoid hydration mismatch
+    // This one-time initialization is intentional and necessary
+    // eslint-disable-next-line
+    setClientSeed(Math.floor(Math.random() * 1000000));
+  }, []);
+  
   const deck = useMemo(() => {
+    const seed = clientSeed ?? 0;
     return shuffleWithSeed(deputados as Deputy[], seed);
-  }, [seed]);
+  }, [clientSeed]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
   const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
@@ -161,6 +161,10 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [round, handleNext]);
+
+  if (clientSeed === null) {
+    return null;
+  }
 
   if (isComplete) {
     return (
