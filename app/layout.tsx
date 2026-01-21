@@ -14,9 +14,36 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://warskeleton.github.io/deputavas";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Deputavas? - Adivinha o partido dos deputados",
   description: "Consegues adivinhar o partido político dos deputados portugueses? Testa os teus conhecimentos neste jogo de swipe!",
+  keywords: ["deputados", "portugal", "política", "jogo", "quiz", "assembleia da república", "partidos"],
+  authors: [{ name: "Deputavas" }],
+  openGraph: {
+    type: "website",
+    locale: "pt_PT",
+    url: siteUrl,
+    siteName: "Deputavas?",
+    title: "Deputavas? - Adivinha o partido dos deputados",
+    description: "Consegues adivinhar o partido político dos deputados portugueses? Testa os teus conhecimentos neste jogo de swipe!",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Deputavas? - Jogo de adivinhar partidos de deputados portugueses",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Deputavas? - Adivinha o partido dos deputados",
+    description: "Consegues adivinhar o partido político dos deputados portugueses? Testa os teus conhecimentos!",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

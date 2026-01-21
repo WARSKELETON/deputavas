@@ -1,0 +1,59 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#F0F2F5"/>
+  
+  <!-- Decorative elements - left side (PS red) -->
+  <circle cx="150" cy="315" r="280" fill="#E11D48" fill-opacity="0.1"/>
+  <circle cx="150" cy="315" r="200" fill="#E11D48" fill-opacity="0.15"/>
+  
+  <!-- Decorative elements - right side (PSD orange) -->
+  <circle cx="1050" cy="315" r="280" fill="#F59E0B" fill-opacity="0.1"/>
+  <circle cx="1050" cy="315" r="200" fill="#F59E0B" fill-opacity="0.15"/>
+  
+  <!-- Card stack illustration -->
+  <g transform="translate(600, 240)">
+    <!-- Back cards -->
+    <rect x="-90" y="-120" width="160" height="200" rx="16" fill="#E4E4E7" transform="rotate(-8)"/>
+    <rect x="-80" y="-125" width="160" height="200" rx="16" fill="#D4D4D8" transform="rotate(5)"/>
+    <!-- Front card -->
+    <rect x="-80" y="-130" width="160" height="200" rx="16" fill="white" stroke="#A1A1AA" stroke-width="2"/>
+    <!-- Silhouette on card -->
+    <circle cx="0" cy="-40" r="35" fill="#E4E4E7"/>
+    <rect x="-40" y="10" width="80" height="50" rx="8" fill="#E4E4E7"/>
+    <!-- Question mark -->
+    <text x="0" y="-30" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="900" fill="#A1A1AA" text-anchor="middle">?</text>
+  </g>
+  
+  <!-- Swipe arrows - LEFT (PS color) -->
+  <g transform="translate(380, 240)">
+    <path d="M0 0 L-40 -20 L-40 -8 L-80 -8 L-80 8 L-40 8 L-40 20 Z" fill="#E11D48" fill-opacity="0.8"/>
+    <text x="-100" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="800" fill="#E11D48" text-anchor="middle">ESQ</text>
+  </g>
+  
+  <!-- Swipe arrows - RIGHT (PSD color) -->
+  <g transform="translate(820, 240)">
+    <path d="M0 0 L40 -20 L40 -8 L80 -8 L80 8 L40 8 L40 20 Z" fill="#F59E0B" fill-opacity="0.8"/>
+    <text x="100" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="800" fill="#F59E0B" text-anchor="middle">DIR</text>
+  </g>
+  
+  <!-- Main title -->
+  <text x="600" y="480" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="900" fill="#1A1A1B" text-anchor="middle" font-style="italic">DEPUTAVAS?</text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="530" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="600" fill="#71717A" text-anchor="middle">Adivinha o partido dos deputados portugueses</text>
+  
+  <!-- Top decoration line -->
+  <rect x="400" y="60" width="400" height="4" rx="2" fill="#1A1A1B"/>
+  
+  <!-- Party color strip at bottom -->
+  <rect x="0" y="620" width="120" height="10" fill="#E11D48"/>
+  <rect x="120" y="620" width="120" height="10" fill="#BE123C"/>
+  <rect x="240" y="620" width="120" height="10" fill="#B91C1C"/>
+  <rect x="360" y="620" width="120" height="10" fill="#C3D500"/>
+  <rect x="480" y="620" width="120" height="10" fill="#016681"/>
+  <rect x="600" y="620" width="120" height="10" fill="#00AB85"/>
+  <rect x="720" y="620" width="120" height="10" fill="#F59E0B"/>
+  <rect x="840" y="620" width="120" height="10" fill="#0EA5E9"/>
+  <rect x="960" y="620" width="120" height="10" fill="#2563EB"/>
+  <rect x="1080" y="620" width="120" height="10" fill="#0F172A"/>
+</svg>
