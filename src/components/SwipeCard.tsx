@@ -309,7 +309,7 @@ export default function SwipeCard({
                 backgroundColor: `${partyInfo?.color}f2`, // Adding transparency
               }}
             >
-              <div className="mb-4 rounded-full bg-white/20 px-6 py-2 backdrop-blur-md">
+              <div className={`mb-4 rounded-full px-6 py-2 backdrop-blur-md ${isCorrect ? "bg-emerald-500" : "bg-rose-500"}`}>
                 <span className="text-sm font-black uppercase tracking-[0.2em]">
                   {isCorrect ? "Correto" : "Errado"}
                 </span>
