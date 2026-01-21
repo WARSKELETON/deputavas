@@ -191,7 +191,7 @@ export default function Home() {
     <div className="h-screen flex flex-col bg-[#F0F2F5] text-zinc-900 font-sans overflow-hidden">
       <header className="shrink-0 mx-auto flex w-full max-w-lg flex-col items-center px-6 pt-8 pb-4 relative">
         <h1 className="text-3xl font-black tracking-tighter text-[#1A1A1B] uppercase italic">
-          Deputavas
+          Deputavas?
         </h1>
         <div className="mt-1 flex gap-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
           <span className="flex items-center gap-1">
