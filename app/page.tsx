@@ -234,14 +234,14 @@ export default function Home() {
             Score: <span className="text-zinc-900">{partyCorrect}/{guesses.length || 0}</span>
           </span>
           <span className="flex items-center gap-1">
-            Accuracy: <span className="text-zinc-900">{accuracy}%</span>
+            Eficácia: <span className="text-zinc-900">{accuracy}%</span>
           </span>
         </div>
         <Link
           href="/insights"
           className="absolute right-6 top-6 text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-600 transition-colors"
         >
-          Stats
+          Estatísticas
         </Link>
       </header>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
 
@@ -65,6 +65,29 @@ export default function SwipeCard({
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [isIdle, setIsIdle] = useState(false);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  const resetIdleTimer = useCallback(() => {
+    setIsIdle(false);
+    lastActivityRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    const checkIdle = setInterval(() => {
+      const now = Date.now();
+      if (now - lastActivityRef.current > 3000 && !isDragging && !showParty && !disabled) {
+        setIsIdle(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkIdle);
+  }, [isDragging, showParty, disabled]);
+
+  useEffect(() => {
+    // Reset idle state when deputy changes
+    resetIdleTimer();
+  }, [deputy, resetIdleTimer]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -91,11 +114,13 @@ export default function SwipeCard({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (disabled || showParty) return;
+    resetIdleTimer();
     setDragStart({ x: e.clientX, y: e.clientY });
     setIsDragging(true);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    resetIdleTimer();
     if (!dragStart || !isDragging) return;
     const offsetX = e.clientX - dragStart.x;
     const offsetY = e.clientY - dragStart.y;
@@ -124,6 +149,7 @@ export default function SwipeCard({
   , [activeOptionIndex, options]);
 
   const handlePointerUp = () => {
+    resetIdleTimer();
     if (!isDragging) return;
     
     const threshold = dynamicRadius * 0.5;
@@ -161,7 +187,7 @@ export default function SwipeCard({
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Polygon Options Visualization */}
-      {options && isDragging && (
+      {options && (isDragging || isIdle) && (
         <div className="absolute z-20 pointer-events-none" style={{ 
           left: '50%', 
           top: '50%',
@@ -184,13 +210,13 @@ export default function SwipeCard({
             <div
               key={option.id}
               className={`absolute flex flex-col items-center justify-center transition-all duration-300 ${
-                isActive ? "z-30 opacity-100" : isDragging ? "opacity-20" : ""
-              }`}
+                isActive ? "z-30 opacity-100" : (isDragging || isIdle) ? "opacity-20" : ""
+              } ${isIdle ? "animate-flicker" : ""}`}
               style={{
                 left: '50%',
                 top: '50%',
                 transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.4 : 1})`,
-                opacity: isActive ? 1 : isDragging ? 0.1 : (option.opacity ?? 0.3),
+                opacity: isActive ? 1 : isDragging ? 0.1 : (isIdle ? 0.3 : (option.opacity ?? 0.3)),
               }}
             >
               <div 
@@ -223,7 +249,7 @@ export default function SwipeCard({
         </div>
       )}
 
-      <div ref={containerRef} className="relative w-[82%] aspect-[3/4]">
+      <div ref={containerRef} className={`relative w-[82%] aspect-[3/4] ${isIdle ? "animate-shake" : ""}`}>
         <article
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

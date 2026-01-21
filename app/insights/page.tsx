@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
-import { useGame } from "@/src/context/GameContext";
+import { useGame, type Guess } from "@/src/context/GameContext";
+import deputadosData from "@/src/data/deputados.json";
 
 function AccuracyCircle({ percent }: { percent: number }) {
   const radius = 36;
@@ -39,8 +40,145 @@ function AccuracyCircle({ percent }: { percent: number }) {
       <div className="absolute flex flex-col items-center">
         <span className="text-5xl font-black tracking-tighter">{Math.round(percent)}%</span>
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mt-1">
-          Accuracy
+          Eficácia
         </span>
+      </div>
+    </div>
+  );
+}
+
+function ParliamentChart({ guesses }: { guesses: Guess[] }) {
+  const sortedDeputados = useMemo(() => {
+    const partyOrder: Party[] = [
+      "BE",
+      "PCP",
+      "L",
+      "PS",
+      "JPP",
+      "PAN",
+      "PSD",
+      "CDS-PP",
+      "IL",
+      "CH",
+    ];
+    return [...deputadosData].sort((a, b) => {
+      const indexA = partyOrder.indexOf(a.party as Party);
+      const indexB = partyOrder.indexOf(b.party as Party);
+      return indexA - indexB;
+    });
+  }, []);
+
+  const rows = useMemo(() => [
+    { radius: 80, count: 30 },
+    { radius: 105, count: 38 },
+    { radius: 130, count: 46 },
+    { radius: 155, count: 53 },
+    { radius: 180, count: 62 },
+  ], []);
+
+  const seats = useMemo(() => {
+    let depIndex = 0;
+    const allSeats = [];
+    
+    for (const row of rows) {
+      for (let i = 0; i < row.count; i++) {
+        const deputado = sortedDeputados[depIndex++];
+        if (!deputado) break;
+
+        const angle = (i / (row.count - 1)) * Math.PI;
+        const theta = Math.PI - angle;
+        
+        const x = row.radius * Math.cos(theta);
+        const y = -row.radius * Math.sin(theta);
+        const rotation = (theta * 180) / Math.PI + 90;
+        
+        const guess = guesses.find(g => g.id === deputado.id);
+        
+        allSeats.push({
+          x,
+          y,
+          rotation,
+          deputado,
+          guess
+        });
+      }
+    }
+    return allSeats;
+  }, [sortedDeputados, guesses, rows]);
+
+  return (
+    <div className="flex flex-col items-center w-full">
+      <div className="relative w-full aspect-2/1 max-w-sm mx-auto mt-4">
+        <svg viewBox="-200 -200 400 210" className="w-full h-full overflow-visible">
+          {seats.map((seat, i) => {
+            const isGuessed = !!seat.guess;
+            const isCorrect = seat.guess?.isPartyCorrect;
+            const party = seat.deputado.party as Party;
+            const color = partyMeta[party]?.color || "#cbd5e1";
+            
+            let fillColor = "#e2e8f0"; // zinc-200
+            if (isGuessed) {
+              fillColor = color;
+            }
+
+            return (
+              <g key={i} transform={`translate(${seat.x}, ${seat.y}) rotate(${seat.rotation})`}>
+                <rect
+                  x="-4"
+                  y="-4"
+                  width="8"
+                  height="8"
+                  fill={fillColor}
+                  rx="1"
+                  className="transition-all duration-500"
+                  style={{
+                    opacity: isGuessed ? 1 : 0.3,
+                  }}
+                />
+                {isGuessed && !isCorrect && (
+                  <circle r="1.5" fill="white" className="animate-pulse" />
+                )}
+              </g>
+            );
+          })}
+          
+          <text
+            x="0"
+            y="-20"
+            textAnchor="middle"
+            className="fill-zinc-900 text-4xl font-black tracking-tighter"
+          >
+            {sortedDeputados.length}
+          </text>
+          <text
+            x="0"
+            y="5"
+            textAnchor="middle"
+            className="fill-zinc-400 text-[10px] font-black uppercase tracking-[0.2em]"
+          >
+            Deputados
+          </text>
+        </svg>
+      </div>
+      
+      <div className="mt-12 flex flex-wrap justify-center gap-x-2 gap-y-3 w-full">
+        {["BE", "PCP", "L", "PS", "JPP", "PAN", "PSD", "CDS-PP", "IL", "CH"].map(p => {
+          const party = p as Party;
+          const count = sortedDeputados.filter(d => d.party === party).length;
+          if (count === 0) return null;
+          
+          return (
+            <div key={p} className="flex flex-col items-center gap-1.5 min-w-[40px]">
+              <div 
+                className="px-2 py-1 rounded-md text-[9px] font-black text-white shadow-sm"
+                style={{ backgroundColor: partyMeta[party].color }}
+              >
+                {party}
+              </div>
+              <span className="text-[10px] font-black text-zinc-400">{count}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -116,7 +254,7 @@ function SegmentedBar({
       </div>
       {caption && (
         <p className="mt-8 text-center text-sm font-medium italic text-zinc-500 leading-relaxed">
-          "{caption}"
+          &quot;{caption}&quot;
         </p>
       )}
     </div>
@@ -225,6 +363,14 @@ export default function InsightsPage() {
         </div>
       ) : (
         <main className="mx-auto flex w-full max-w-md flex-col gap-6">
+          {/* Parliament Visualization */}
+          <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100 flex flex-col items-center">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 self-start">
+              O Teu Parlamento
+            </h2>
+            <ParliamentChart guesses={results} />
+          </section>
+
           {/* Main Accuracy Circle */}
           <section className="rounded-[2.5rem] bg-white p-8 shadow-xl shadow-zinc-200/50 border border-zinc-100 flex justify-center">
             <AccuracyCircle percent={summary.accuracy} />
@@ -248,7 +394,7 @@ export default function InsightsPage() {
               />
             </div>
             <p className="mt-10 text-center text-sm font-medium italic text-zinc-500">
-              "{summary.accuracyCaption}"
+              &quot;{summary.accuracyCaption}&quot;
             </p>
           </section>
 
@@ -267,7 +413,7 @@ export default function InsightsPage() {
                     {item.party}
                   </span>
                   <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    {Math.round(item.accuracy)}% accuracy
+                    {Math.round(item.accuracy)}% eficácia
                   </span>
                 </div>
               ))}
@@ -284,8 +430,8 @@ export default function InsightsPage() {
               rightLabel="Direita"
               leftPercent={summary.guessTendencyLeft}
               rightPercent={summary.guessTendencyRight}
-              leftColor="bg-rose-400"
-              rightColor="bg-emerald-400"
+              leftColor="bg-rose-500"
+              rightColor="bg-amber-500"
               caption={summary.tendencyCaption}
             />
           </section>
@@ -293,15 +439,15 @@ export default function InsightsPage() {
           {/* Dataset Composition */}
           <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100">
             <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-8">
-              Composição do Baralho
+              Composição dos Deputados Até Agora
             </h2>
             <SegmentedBar
               leftLabel={`Esquerda (${summary.leftCount})`}
               rightLabel={`Direita (${summary.rightCount})`}
               leftPercent={summary.datasetLeft}
               rightPercent={summary.datasetRight}
-              leftColor="bg-rose-200"
-              rightColor="bg-emerald-200"
+              leftColor="bg-rose-500"
+              rightColor="bg-amber-500"
             />
           </section>
         </main>
