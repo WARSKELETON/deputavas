@@ -14,6 +14,13 @@ type SwipeOption = {
   id: string;
   label: string;
   color: string;
+  opacity?: number;
+};
+
+type PersistentSelection = {
+  id: string;
+  label: string;
+  color: string;
 };
 
 type SwipeCardProps = {
@@ -26,6 +33,8 @@ type SwipeCardProps = {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   disabled?: boolean;
+  selectionOverlay?: (option: SwipeOption) => React.ReactNode;
+  persistentSelections?: PersistentSelection[];
 };
 
 function getInitials(name: string) {
@@ -47,6 +56,8 @@ export default function SwipeCard({
   onSwipeLeft,
   onSwipeRight,
   disabled,
+  selectionOverlay,
+  persistentSelections,
 }: SwipeCardProps) {
   const [imageError, setImageError] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -72,7 +83,7 @@ export default function SwipeCard({
   const dynamicRadius = useMemo(() => {
     const minDim = Math.min(dimensions.width, dimensions.height);
     if (minDim === 0) return 130;
-    return minDim * 0.38;
+    return minDim * 0.55; // Pushes bubbles to the edges/outside
   }, [dimensions]);
 
   const partyInfo = partyMeta[deputy.party as Party];
@@ -106,7 +117,11 @@ export default function SwipeCard({
     // Offset by segmentSize / 2 to center the first option at 0 degrees
     const adjustedAngle = (angle + segmentSize / 2) % 360;
     return Math.floor(adjustedAngle / segmentSize);
-  }, [dragOffset, options, isDragging]);
+  }, [dragOffset, options, isDragging, dynamicRadius]);
+
+  const activeOption = useMemo(() => 
+    activeOptionIndex !== -1 ? options?.[activeOptionIndex] : null
+  , [activeOptionIndex, options]);
 
   const handlePointerUp = () => {
     if (!isDragging) return;
@@ -135,10 +150,18 @@ export default function SwipeCard({
   const distance = Math.sqrt(dragOffset.x ** 2 + dragOffset.y ** 2);
   const opacity = Math.max(0.5, 1 - distance / 1000);
 
+  const activeBorderColor = useMemo(() => {
+    if (activeOption) return activeOption.color;
+    if (persistentSelections && persistentSelections.length > 0) {
+      return persistentSelections[persistentSelections.length - 1].color;
+    }
+    return "white";
+  }, [activeOption, persistentSelections]);
+
   return (
     <div ref={containerRef} className="relative w-full h-full flex items-center justify-center">
       {/* Polygon Options Visualization */}
-      {isDragging && options && (
+      {options && (
         <div className="absolute inset-0 z-20 pointer-events-none">
           {options.map((option, index) => {
             const angle = (index * 360) / options.length;
@@ -149,17 +172,18 @@ export default function SwipeCard({
             const isActive = activeOptionIndex === index;
             
             // Scaled bubble size
-            const bubbleSize = Math.max(48, Math.min(64, dynamicRadius * 0.4));
+            const bubbleSize = Math.max(36, Math.min(52, dynamicRadius * 0.3));
             
             return (
               <div
                 key={option.id}
                 className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${
-                  isActive ? "z-30" : "opacity-40"
+                  isActive ? "z-30 opacity-100" : isDragging ? "opacity-20" : ""
                 }`}
                 style={{
                   transformOrigin: "center center",
                   transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.4 : 1})`,
+                  opacity: isActive ? 1 : isDragging ? 0.1 : (option.opacity ?? 0.3),
                 }}
               >
                 <div 
@@ -168,22 +192,17 @@ export default function SwipeCard({
                     backgroundColor: option.color,
                     width: `${bubbleSize}px`,
                     height: `${bubbleSize}px`,
-                    fontSize: `${bubbleSize * 0.25}px`,
+                    fontSize: `${bubbleSize * 0.20}px`,
                   }}
                 >
                   {option.label}
                 </div>
-                {isActive && (
-                  <div className="absolute -bottom-8 whitespace-nowrap bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
-                    {option.id}
-                  </div>
-                )}
               </div>
             );
           })}
           
           {/* Active Direction Line */}
-          {distance > dynamicRadius * 0.3 && (
+          {isDragging && distance > dynamicRadius * 0.3 && (
             <div 
               className="absolute left-1/2 top-1/2 h-1 bg-white/30 origin-left rounded-full"
               style={{
@@ -203,13 +222,31 @@ export default function SwipeCard({
         style={{
           transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
           opacity,
-          transition: isDragging ? "none" : "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
+          transition: isDragging ? "border-color 0.2s ease-in-out" : "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
           touchAction: "none",
           cursor: isDragging ? "grabbing" : (disabled || showParty ? "default" : "grab"),
+          borderColor: activeBorderColor,
         }}
-        className={`w-full overflow-hidden rounded-[2.5rem] border-[6px] border-white bg-white shadow-2xl shadow-zinc-400/50 ${className ?? ""}`}
+        className={`w-[82%] aspect-[3/4] overflow-hidden rounded-[2rem] border-[6px] bg-white shadow-2xl shadow-zinc-400/50 ${className ?? ""}`}
       >
-        <div className="w-full bg-zinc-100">
+        <div className="relative w-full bg-zinc-100">
+          {/* Persistent Selections Bar */}
+          {persistentSelections && persistentSelections.length > 0 && (
+            <div className="absolute top-4 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
+              {persistentSelections.map((sel, i) => (
+                <div 
+                  key={`${sel.id}-${i}`}
+                  className="flex items-center gap-2 rounded-full border-2 border-white px-2 py-0.5 shadow-md animate-in slide-in-from-top-2 duration-300"
+                  style={{ backgroundColor: sel.color }}
+                >
+                  <span className="text-[9px] font-black italic text-white uppercase tracking-tighter">
+                    {sel.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {imageError ? (
             <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-zinc-400">
               {initials}
@@ -222,6 +259,24 @@ export default function SwipeCard({
               onError={() => setImageError(true)}
               loading="lazy"
             />
+          )}
+
+          {/* Selection Label Overlay */}
+          {isDragging && activeOption && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-[1px] animate-in fade-in duration-200">
+              {selectionOverlay ? (
+                selectionOverlay(activeOption)
+              ) : (
+                <div 
+                  className="scale-90 rounded-xl px-6 py-3 shadow-2xl border-2 border-white animate-in zoom-in-95 duration-200"
+                  style={{ backgroundColor: activeOption.color }}
+                >
+                  <span className="text-2xl font-black italic text-white uppercase tracking-tighter">
+                    {activeOption.label}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
           
           {/* Swipe Indicators for Left/Right only if no options */}

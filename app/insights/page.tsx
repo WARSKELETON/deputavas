@@ -1,20 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { partyMeta, type Bloc, type Party } from "@/src/data/parties";
-
-type Guess = {
-  id: string;
-  name: string;
-  party: Party;
-  bloc: Bloc;
-  blocGuess: Bloc;
-  partyGuess: Party;
-  isBlocCorrect: boolean;
-  isPartyCorrect: boolean;
-};
+import { partyMeta, type Party } from "@/src/data/parties";
+import { useGame } from "@/src/context/GameContext";
 
 function AccuracyCircle({ percent }: { percent: number }) {
   const radius = 36;
@@ -134,17 +124,7 @@ function SegmentedBar({
 }
 
 export default function InsightsPage() {
-  const [results, setResults] = useState<Guess[]>([]);
-
-  useEffect(() => {
-    const raw = localStorage.getItem("deputadosGuessResults");
-    if (!raw) return;
-    try {
-      setResults(JSON.parse(raw));
-    } catch (error) {
-      console.error("Falha ao carregar resultados:", error);
-    }
-  }, []);
+  const { guesses: results } = useGame();
 
   const summary = useMemo(() => {
     const total = results.length;

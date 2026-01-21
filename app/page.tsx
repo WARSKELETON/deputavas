@@ -11,6 +11,7 @@ import {
   type Party,
 } from "@/src/data/parties";
 import SwipeCard from "@/src/components/SwipeCard";
+import { useGame, type Guess } from "@/src/context/GameContext";
 
 type Deputy = {
   id: string;
@@ -18,17 +19,6 @@ type Deputy = {
   party: string;
   legislature: string;
   photoUrl: string;
-};
-
-type Guess = {
-  id: string;
-  name: string;
-  party: Party;
-  bloc: Bloc;
-  blocGuess: Bloc;
-  partyGuess: Party;
-  isBlocCorrect: boolean;
-  isPartyCorrect: boolean;
 };
 
 function shuffle<T>(items: T[]) {
@@ -45,24 +35,21 @@ function getBlocForParty(party: Party) {
 }
 
 export default function Home() {
+  const { guesses, addGuess } = useGame();
   const [deck] = useState(() => shuffle(deputados as Deputy[]));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
   const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
-  const [partyGuess, setPartyGuess] = useState<Party | null>(null);
   const [lastResult, setLastResult] = useState<Guess | null>(null);
-  const [guesses, setGuesses] = useState<Guess[]>([]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prev) => prev + 1);
     setBlocGuess(null);
-    setPartyGuess(null);
     setLastResult(null);
     setRound("bloc");
   }, []);
 
   const currentDeputy = deck[currentIndex];
-  const nextDeputy = deck[currentIndex + 1];
   const total = deck.length;
   const blocCorrect = guesses.filter((guess) => guess.isBlocCorrect).length;
   const partyCorrect = guesses.filter((guess) => guess.isPartyCorrect).length;
@@ -75,20 +62,34 @@ export default function Home() {
   const actualParty = currentDeputy?.party as Party;
   const actualBloc = actualParty ? getBlocForParty(actualParty) : null;
 
-  const partySwipeOptions = useMemo(() => {
-    const options = blocGuess ? partiesByBloc[blocGuess] : [];
-    if (!options.length) return [];
-    return options.map((p) => ({
-      id: p,
-      label: partyMeta[p].label,
-      color: partyMeta[p].color,
-    }));
-  }, [blocGuess]);
-
-  const blocSwipeOptions = useMemo(() => [
-    { id: "right", label: "DIR", color: "#10B981" },
-    { id: "left", label: "ESQ", color: "#F43F5E" },
+  const allPartyOptions = useMemo(() => [
+    { id: "PSD", label: "PSD", color: partyMeta["PSD"].color, bloc: "right" },
+    { id: "CDS-PP", label: "CDS", color: partyMeta["CDS-PP"].color, bloc: "right" },
+    { id: "IL", label: "IL", color: partyMeta["IL"].color, bloc: "right" },
+    { id: "CH", label: "CH", color: partyMeta["CH"].color, bloc: "right" },
+    { id: "JPP", label: "JPP", color: partyMeta["JPP"].color, bloc: "left" },
+    { id: "L", label: "L", color: partyMeta["L"].color, bloc: "left" },
+    { id: "PCP", label: "PCP", color: partyMeta["PCP"].color, bloc: "left" },
+    { id: "BE", label: "BE", color: partyMeta["BE"].color, bloc: "left" },
+    { id: "PS", label: "PS", color: partyMeta["PS"].color, bloc: "left" },
+    { id: "PAN", label: "PAN", color: partyMeta["PAN"].color, bloc: "left" },
   ], []);
+
+  const currentOptions = useMemo(() => {
+    if (round === "bloc") {
+      return [
+        { id: "right", label: "DIR", color: partyMeta["PSD"].color },
+        { id: "left", label: "ESQ", color: partyMeta["PS"].color },
+      ];
+    }
+    
+    // In party or reveal round, show all parties but fade non-relevant ones if in party mode
+    const effectiveBloc = blocGuess || lastResult?.blocGuess;
+    return allPartyOptions.map(opt => ({
+      ...opt,
+      opacity: round === "party" && effectiveBloc && opt.bloc !== effectiveBloc ? 0.1 : 0.6
+    }));
+  }, [round, blocGuess, lastResult, allPartyOptions]);
 
   const handleBlocSelect = (bloc: Bloc) => {
     if (round !== "bloc") return;
@@ -96,9 +97,28 @@ export default function Home() {
     setRound("party");
   };
 
+  const persistentSelections = useMemo(() => {
+    const selections = [];
+    if (blocGuess || lastResult?.blocGuess) {
+      const b = blocGuess || lastResult?.blocGuess;
+      selections.push({
+        id: b!,
+        label: b === "left" ? "ESQ" : "DIR",
+        color: b === "left" ? partyMeta["PS"].color : partyMeta["PSD"].color,
+      });
+    }
+    if (lastResult?.partyGuess) {
+      selections.push({
+        id: lastResult.partyGuess,
+        label: partyMeta[lastResult.partyGuess].label,
+        color: partyMeta[lastResult.partyGuess].color,
+      });
+    }
+    return selections;
+  }, [blocGuess, lastResult]);
+
   const handlePartySelect = (party: Party) => {
     if (round !== "party" || !blocGuess || !currentDeputy || !actualBloc || !actualParty) return;
-    setPartyGuess(party);
     const result: Guess = {
       id: currentDeputy.id,
       name: currentDeputy.name,
@@ -109,15 +129,10 @@ export default function Home() {
       isBlocCorrect: blocGuess === actualBloc,
       isPartyCorrect: party === actualParty,
     };
-    setGuesses((prev) => [...prev, result]);
+    addGuess(result);
     setLastResult(result);
     setRound("reveal");
   };
-
-  useEffect(() => {
-    if (guesses.length === 0) return;
-    localStorage.setItem("deputadosGuessResults", JSON.stringify(guesses));
-  }, [guesses]);
 
   useEffect(() => {
     if (round === "reveal") {
@@ -201,11 +216,27 @@ export default function Home() {
               deputy={currentDeputy}
               showParty={round === "reveal"}
               isCorrect={lastResult?.isPartyCorrect}
-              options={round === "bloc" ? blocSwipeOptions : round === "party" ? partySwipeOptions : undefined}
+              options={currentOptions}
+              persistentSelections={persistentSelections}
               onSelect={(id) => {
                 if (round === "bloc") handleBlocSelect(id as Bloc);
                 else if (round === "party") handlePartySelect(id as Party);
               }}
+              selectionOverlay={(option) => (
+                <div 
+                  className="scale-90 rounded-xl px-6 py-3 shadow-2xl border-2 border-white animate-in zoom-in-95 duration-200 flex flex-col items-center"
+                  style={{ backgroundColor: option.color }}
+                >
+                  <span className="text-2xl font-black italic text-white uppercase tracking-tighter">
+                    {option.label}
+                  </span>
+                  {round === "bloc" && (
+                    <span className="text-[8px] font-bold text-white/80 uppercase tracking-[0.2em] mt-0.5">
+                      {option.id === "left" ? "Esquerda" : "Direita"}
+                    </span>
+                  )}
+                </div>
+              )}
               onSwipeLeft={() => handleBlocSelect("left")}
               onSwipeRight={() => handleBlocSelect("right")}
               disabled={round === "reveal"}

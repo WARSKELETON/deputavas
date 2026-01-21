@@ -52,19 +52,19 @@ export const partyMeta = {
     label: "L",
     name: "Livre",
     bloc: "left",
-    color: "#10B981",
+    color: "#C3D500",
   },
   PAN: {
     label: "PAN",
     name: "Pessoas-Animais-Natureza",
     bloc: "left",
-    color: "#16A34A",
+    color: "#016681",
   },
   JPP: {
     label: "JPP",
     name: "Juntos Pelo Povo",
     bloc: "left",
-    color: "#22C55E",
+    color: "#00AB85",
   },
 } as const;
 
