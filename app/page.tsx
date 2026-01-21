@@ -12,6 +12,7 @@ import {
 } from "@/src/data/parties";
 import SwipeCard from "@/src/components/SwipeCard";
 import { useGame, type Guess } from "@/src/context/GameContext";
+import AdBanner from "@/src/components/AdBanner";
 
 type Deputy = {
   id: string;
@@ -178,6 +179,13 @@ export default function Home() {
               Ver insights
             </Link>
           </div>
+          
+          {/* Ad placement - shows after game completion */}
+          {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
+            <div className="mt-10 w-full max-w-md">
+              <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="horizontal" />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -303,6 +311,13 @@ export default function Home() {
                 Partilhar Resultados
               </button>
             </div>
+            
+            {/* Ad in modal */}
+            {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
+              <div className="mt-6">
+                <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="rectangle" />
+              </div>
+            )}
           </div>
         </div>
       )}

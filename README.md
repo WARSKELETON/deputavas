@@ -2,7 +2,26 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Environment Variables
+
+Copy the example environment file and configure your settings:
+
+```bash
+cp .env.local.example .env.local
+```
+
+#### Google AdSense (Optional)
+
+To enable ads on the site, add your AdSense credentials:
+
+```
+NEXT_PUBLIC_ADSENSE_PUBLISHER_ID=ca-pub-XXXXXXXXXXXXXXXX
+NEXT_PUBLIC_ADSENSE_SLOT_ID=XXXXXXXXXX
+```
+
+Get these from your [AdSense dashboard](https://www.google.com/adsense/) under **Ads > By ad unit**.
+
+### Running the Development Server
 
 ```bash
 npm run dev
