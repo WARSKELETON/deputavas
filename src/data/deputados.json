@@ -1601,5 +1601,12 @@
     "party": "PSD",
     "legislature": "XVII",
     "photoUrl": "/images/deputados/4221.png"
+  },
+  {
+    "id": "4557",
+    "name": "Mariana Mortágua",
+    "party": "BE",
+    "legislature": "XVII",
+    "photoUrl": "/images/deputados/4557.png"
   }
 ]

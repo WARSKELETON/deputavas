@@ -77,14 +77,11 @@ function ParliamentChart({ guesses }: { guesses: Guess[] }) {
   ], []);
 
   const seats = useMemo(() => {
-    let depIndex = 0;
-    const allSeats = [];
+    // 1. Generate all possible seat positions
+    const allPossibleSeats: { x: number; y: number; rotation: number; theta: number }[] = [];
     
     for (const row of rows) {
       for (let i = 0; i < row.count; i++) {
-        const deputado = sortedDeputados[depIndex++];
-        if (!deputado) break;
-
         const angle = (i / (row.count - 1)) * Math.PI;
         const theta = Math.PI - angle;
         
@@ -92,31 +89,43 @@ function ParliamentChart({ guesses }: { guesses: Guess[] }) {
         const y = -row.radius * Math.sin(theta);
         const rotation = (theta * 180) / Math.PI + 90;
         
-        const guess = guesses.find(g => g.id === deputado.id);
-        
-        allSeats.push({
+        allPossibleSeats.push({
           x,
           y,
           rotation,
-          deputado,
-          guess
+          theta,
         });
       }
     }
-    return allSeats;
+
+    // 2. Sort all seats by angle (theta) from left to right
+    // Leftmost theta is PI (180deg), rightmost is 0 (0deg)
+    // So sorting descending by theta gives left-to-right
+    allPossibleSeats.sort((a, b) => b.theta - a.theta);
+
+    // 3. Map sorted deputies to sorted seats
+    return allPossibleSeats.map((seat, i) => {
+      const deputado = sortedDeputados[i];
+      const guess = deputado ? guesses.find(g => g.id === deputado.id) : undefined;
+      return {
+        ...seat,
+        deputado,
+        guess
+      };
+    }).filter(s => s.deputado);
   }, [sortedDeputados, guesses, rows]);
 
   return (
     <div className="flex flex-col items-center w-full">
       <div className="relative w-full aspect-2/1 max-w-sm mx-auto mt-4">
-        <svg viewBox="-200 -200 400 210" className="w-full h-full overflow-visible">
+        <svg viewBox="-205 -205 410 215" className="w-full h-full overflow-visible">
           {seats.map((seat, i) => {
             const isGuessed = !!seat.guess;
             const isCorrect = seat.guess?.isPartyCorrect;
-            const party = seat.deputado.party as Party;
+            const party = seat.deputado?.party as Party;
             const color = partyMeta[party]?.color || "#cbd5e1";
             
-            let fillColor = "#e2e8f0"; // zinc-200
+            let fillColor = "#cbd5e1"; // zinc-300
             if (isGuessed) {
               fillColor = color;
             }
@@ -124,10 +133,10 @@ function ParliamentChart({ guesses }: { guesses: Guess[] }) {
             return (
               <g key={i} transform={`translate(${seat.x}, ${seat.y}) rotate(${seat.rotation})`}>
                 <rect
-                  x="-4"
+                  x="-5"
                   y="-4"
-                  width="8"
-                  height="8"
+                  width="10"
+                  height="7"
                   fill={fillColor}
                   rx="1"
                   className="transition-all duration-500"
@@ -146,13 +155,13 @@ function ParliamentChart({ guesses }: { guesses: Guess[] }) {
             x="0"
             y="-20"
             textAnchor="middle"
-            className="fill-zinc-900 text-4xl font-black tracking-tighter"
+            className="fill-zinc-900 text-5xl font-black tracking-tighter"
           >
             {sortedDeputados.length}
           </text>
           <text
             x="0"
-            y="5"
+            y="10"
             textAnchor="middle"
             className="fill-zinc-400 text-[10px] font-black uppercase tracking-[0.2em]"
           >
@@ -161,24 +170,58 @@ function ParliamentChart({ guesses }: { guesses: Guess[] }) {
         </svg>
       </div>
       
-      <div className="mt-12 flex flex-wrap justify-center gap-x-2 gap-y-3 w-full">
-        {["BE", "PCP", "L", "PS", "JPP", "PAN", "PSD", "CDS-PP", "IL", "CH"].map(p => {
-          const party = p as Party;
-          const count = sortedDeputados.filter(d => d.party === party).length;
-          if (count === 0) return null;
+      <div className="mt-12 flex flex-wrap justify-center gap-x-1 gap-y-3 w-full">
+        {(() => {
+          const displayParties: { label: string; color: string; count: number }[] = [];
           
-          return (
-            <div key={p} className="flex flex-col items-center gap-1.5 min-w-[40px]">
+          // Group BE
+          const beCount = sortedDeputados.filter(d => d.party === "BE").length;
+          if (beCount) displayParties.push({ label: "BE", color: partyMeta.BE.color, count: beCount });
+          
+          // Group CDU (PCP)
+          const cduCount = sortedDeputados.filter(d => d.party === "PCP").length;
+          if (cduCount) displayParties.push({ label: "CDU", color: partyMeta.PCP.color, count: cduCount });
+          
+          // Group L
+          const lCount = sortedDeputados.filter(d => d.party === "L").length;
+          if (lCount) displayParties.push({ label: "L", color: partyMeta.L.color, count: lCount });
+          
+          // Group PS
+          const psCount = sortedDeputados.filter(d => d.party === "PS").length;
+          if (psCount) displayParties.push({ label: "PS", color: partyMeta.PS.color, count: psCount });
+          
+          // Group JPP
+          const jppCount = sortedDeputados.filter(d => d.party === "JPP").length;
+          if (jppCount) displayParties.push({ label: "JPP", color: partyMeta.JPP.color, count: jppCount });
+          
+          // Group PAN
+          const panCount = sortedDeputados.filter(d => d.party === "PAN").length;
+          if (panCount) displayParties.push({ label: "PAN", color: partyMeta.PAN.color, count: panCount });
+          
+          // Group AD (PSD + CDS-PP)
+          const adCount = sortedDeputados.filter(d => d.party === "PSD" || d.party === "CDS-PP").length;
+          if (adCount) displayParties.push({ label: "AD", color: partyMeta.PSD.color, count: adCount });
+          
+          // Group IL
+          const ilCount = sortedDeputados.filter(d => d.party === "IL").length;
+          if (ilCount) displayParties.push({ label: "IL", color: partyMeta.IL.color, count: ilCount });
+          
+          // Group CH
+          const chCount = sortedDeputados.filter(d => d.party === "CH").length;
+          if (chCount) displayParties.push({ label: "CH", color: partyMeta.CH.color, count: chCount });
+
+          return displayParties.map(p => (
+            <div key={p.label} className="flex flex-col items-center gap-1.5 min-w-[42px]">
               <div 
-                className="px-2 py-1 rounded-md text-[9px] font-black text-white shadow-sm"
-                style={{ backgroundColor: partyMeta[party].color }}
+                className="px-2 py-1 rounded-sm text-[9px] font-black text-white shadow-sm"
+                style={{ backgroundColor: p.color }}
               >
-                {party}
+                {p.label}
               </div>
-              <span className="text-[10px] font-black text-zinc-400">{count}</span>
+              <span className="text-[10px] font-black text-zinc-900">{p.count}</span>
             </div>
-          );
-        })}
+          ));
+        })()}
       </div>
     </div>
   );
@@ -390,7 +433,7 @@ export default function InsightsPage() {
               <ProgressBar 
                 label="Direita" 
                 percent={summary.rightAccuracy} 
-                colorClass="bg-emerald-500"
+                colorClass="bg-amber-500"
               />
             </div>
             <p className="mt-10 text-center text-sm font-medium italic text-zinc-500">

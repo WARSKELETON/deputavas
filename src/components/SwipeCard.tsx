@@ -63,10 +63,15 @@ export default function SwipeCard({
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [grabPoint, setGrabPoint] = useState<{ x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isIdle, setIsIdle] = useState(false);
-  const lastActivityRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
+
+  useEffect(() => {
+    lastActivityRef.current = Date.now();
+  }, []);
 
   const resetIdleTimer = useCallback(() => {
     setIsIdle(false);
@@ -114,7 +119,28 @@ export default function SwipeCard({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (disabled || showParty) return;
+    
+    // Prevent default browser behavior (like scrolling) on touch
+    if (e.pointerType === 'touch') {
+      // Note: e.preventDefault() on pointerdown is sometimes needed for touch-action to be respected early
+    }
+
     resetIdleTimer();
+
+    // Capture the pointer to handle movement even outside the card area
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    // Calculate grab point relative to card center for natural rotation
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      setGrabPoint({
+        x: (e.clientX - centerX) / (rect.width / 2),
+        y: (e.clientY - centerY) / (rect.height / 2),
+      });
+    }
+
     setDragStart({ x: e.clientX, y: e.clientY });
     setIsDragging(true);
   };
@@ -148,9 +174,13 @@ export default function SwipeCard({
     activeOptionIndex !== -1 ? options?.[activeOptionIndex] : null
   , [activeOptionIndex, options]);
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     resetIdleTimer();
     if (!isDragging) return;
+
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     
     const threshold = dynamicRadius * 0.5;
     const distance = Math.sqrt(dragOffset.x ** 2 + dragOffset.y ** 2);
@@ -170,9 +200,22 @@ export default function SwipeCard({
     setDragStart(null);
     setDragOffset({ x: 0, y: 0 });
     setIsDragging(false);
+    setGrabPoint(null);
   };
 
-  const rotation = dragOffset.x * 0.1;
+  const rotation = useMemo(() => {
+    if (!grabPoint) return dragOffset.x * 0.1;
+    // Lever effect: grabbing the top (y < 0) and pulling right (x > 0) rotates clockwise (positive)
+    // Grabbing the bottom (y > 0) and pulling right rotates counter-clockwise (negative)
+    // Clamp the grabPoint impact to avoid extreme rotations if clicked far outside
+    const leverY = Math.max(-2, Math.min(2, grabPoint.y));
+    const lever = -leverY;
+    
+    // We want a base rotation even at center (y=0), but it scales with how far from center we are
+    const influence = 0.4 + Math.abs(lever) * 0.6;
+    return dragOffset.x * 0.08 * (lever >= 0 ? influence : -influence);
+  }, [dragOffset.x, grabPoint]);
+
   const distance = Math.sqrt(dragOffset.x ** 2 + dragOffset.y ** 2);
   const opacity = Math.max(0.5, 1 - distance / 1000);
 
@@ -185,7 +228,15 @@ export default function SwipeCard({
   }, [activeOption, persistentSelections]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div
+      className={`relative w-full h-full flex items-center justify-center touch-none ${
+        disabled || showParty ? "cursor-default" : isDragging ? "cursor-grabbing" : "cursor-grab"
+      }`}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
       {/* Polygon Options Visualization */}
       {options && (isDragging || isIdle) && (
         <div className="absolute z-20 pointer-events-none" style={{ 
@@ -239,31 +290,26 @@ export default function SwipeCard({
           <div 
             className="absolute h-1 bg-white/30 origin-left rounded-full"
             style={{
-              left: '50%',
-              top: '50%',
+              left: grabPoint ? `calc(50% + ${grabPoint.x * (dimensions.width / 2)}px)` : '50%',
+              top: grabPoint ? `calc(50% + ${grabPoint.y * (dimensions.height / 2)}px)` : '50%',
               width: `${Math.min(distance, dynamicRadius * 1.2)}px`,
-              transform: `translate(0, -50%) rotate(${(Math.atan2(dragOffset.y, dragOffset.x) * 180) / Math.PI}deg)`,
+              transform: `rotate(${(Math.atan2(dragOffset.y, dragOffset.x) * 180) / Math.PI}deg)`,
             }}
           />
         )}
         </div>
       )}
 
-      <div ref={containerRef} className={`relative w-[82%] aspect-[3/4] ${isIdle ? "animate-shake" : ""}`}>
+      <div ref={containerRef} className={`relative w-[82%] aspect-3/4 touch-none ${isIdle ? "animate-shake" : ""}`}>
         <article
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
           style={{
             transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
             opacity,
             transition: isDragging ? "border-color 0.2s ease-in-out" : "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
-            touchAction: "none",
-            cursor: isDragging ? "grabbing" : (disabled || showParty ? "default" : "grab"),
             borderColor: activeBorderColor,
+            touchAction: "none",
           }}
-          className={`w-full h-full overflow-hidden rounded-[2rem] border-[6px] bg-white shadow-2xl shadow-zinc-400/50 ${className ?? ""}`}
+          className={`w-full h-full overflow-hidden rounded-4xl border-[6px] bg-white shadow-2xl shadow-zinc-400/50 ${className ?? ""}`}
         >
           <div className="relative w-full h-full bg-zinc-100">
           {/* Persistent Selections Bar */}

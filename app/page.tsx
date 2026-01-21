@@ -100,7 +100,7 @@ export default function Home() {
     if (round === "bloc") {
       return [
         { id: "right", label: "DIR", color: partyMeta["PSD"].color },
-        { id: "left", label: "ESQ", color: partyMeta["PS"].color },
+        { id: "left", label: "ESQ", color: "#FF2157" },
       ];
     }
     
