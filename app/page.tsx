@@ -56,16 +56,22 @@ export default function Home() {
   const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
   const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
   const [lastResult, setLastResult] = useState<Guess | null>(null);
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => prev + 1);
-    setBlocGuess(null);
-    setLastResult(null);
-    setRound("bloc");
-  }, []);
+  const [showAdBreak, setShowAdBreak] = useState(false);
 
   const currentDeputy = deck[currentIndex];
   const total = deck.length;
+
+  const handleNext = useCallback(() => {
+    const nextIndex = currentIndex + 1;
+    // Show ad break every 5 guesses
+    if (nextIndex > 0 && nextIndex % 5 === 0 && nextIndex < total) {
+      setShowAdBreak(true);
+    }
+    setCurrentIndex(nextIndex);
+    setBlocGuess(null);
+    setLastResult(null);
+    setRound("bloc");
+  }, [currentIndex, total]);
   const blocCorrect = guesses.filter((guess) => guess.isBlocCorrect).length;
   const partyCorrect = guesses.filter((guess) => guess.isPartyCorrect).length;
 
@@ -219,7 +225,7 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-[#F0F2F5] text-zinc-900 font-sans overflow-hidden">
-      <header className="shrink-0 mx-auto flex w-full max-w-lg flex-col items-center px-6 pt-8 pb-4 relative">
+      <header className="shrink-0 mx-auto flex w-full max-w-lg flex-col items-center px-6 pt-4 pb-2 relative">
         <h1 className="text-3xl font-black tracking-tighter text-[#1A1A1B] uppercase italic">
           Deputavas?
         </h1>
@@ -233,10 +239,17 @@ export default function Home() {
         </div>
         <Link
           href="/insights"
-          className="absolute right-6 top-10 text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-600 transition-colors"
+          className="absolute right-6 top-6 text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-600 transition-colors"
         >
           Stats
         </Link>
+        
+        {/* Ad banner below header */}
+        {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
+          <div className="mt-3 w-full max-w-[320px]">
+            <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="horizontal" className="min-h-[50px]" />
+          </div>
+        )}
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-12 overflow-y-auto">
@@ -305,6 +318,26 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Ad break interstitial - every 5 guesses */}
+      {showAdBreak && process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-6">
+          <div className="w-full max-w-sm rounded-4xl bg-white p-8 text-center shadow-2xl">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-4">
+              Pausa para publicidade
+            </p>
+            <div className="my-4">
+              <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="rectangle" />
+            </div>
+            <button
+              onClick={() => setShowAdBreak(false)}
+              className="mt-4 w-full rounded-2xl bg-[#1A1A1B] py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-all active:scale-95"
+            >
+              Continuar a jogar
+            </button>
+          </div>
+        </div>
+      )}
 
       {isComplete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-6">

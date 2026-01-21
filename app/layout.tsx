@@ -53,20 +53,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt">
-      <head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <GameProvider>{children}</GameProvider>
         {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
           <Script
-            async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID}`}
             crossOrigin="anonymous"
             strategy="afterInteractive"
           />
         )}
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <GameProvider>{children}</GameProvider>
       </body>
     </html>
   );
