@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useCallback, useMemo, useId } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
 import deputados from "@/src/data/deputados.json";
 import { partyMeta, type Bloc, type Party } from "@/src/data/parties";
@@ -48,11 +48,10 @@ function getBlocForParty(party: Party) {
 
 export default function Home() {
   const { guesses, addGuess } = useGame();
-  const seedId = useId();
+  const [seed] = useState(() => Math.floor(Math.random() * 1000000));
   const deck = useMemo(() => {
-    const seed = hashStringToSeed(seedId);
     return shuffleWithSeed(deputados as Deputy[], seed);
-  }, [seedId]);
+  }, [seed]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
   const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
