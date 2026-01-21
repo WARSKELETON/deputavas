@@ -243,13 +243,6 @@ export default function Home() {
         >
           Stats
         </Link>
-        
-        {/* Ad banner below header */}
-        {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
-          <div className="mt-3 w-full max-w-[320px]">
-            <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="horizontal" className="min-h-[50px]" />
-          </div>
-        )}
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-12 overflow-y-auto">

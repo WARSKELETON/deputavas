@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 declare global {
   interface Window {
@@ -21,19 +21,40 @@ export default function AdBanner({
   fullWidthResponsive = true,
   className = "",
 }: AdBannerProps) {
+  const adRef = useRef<HTMLModElement>(null);
+  const [adLoaded, setAdLoaded] = useState(false);
+
   useEffect(() => {
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (error) {
       console.error("AdSense error:", error);
     }
+
+    // Check if ad loaded after a delay
+    const timer = setTimeout(() => {
+      if (adRef.current && adRef.current.offsetHeight > 0) {
+        setAdLoaded(true);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className={`ad-container ${className}`}>
+    <div className={`ad-container relative ${className}`}>
+      {/* Placeholder shown until ad loads */}
+      {!adLoaded && (
+        <div className="flex items-center justify-center bg-zinc-100 rounded-lg border border-zinc-200 border-dashed py-4 px-6 min-h-[60px]">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            Publicidade
+          </span>
+        </div>
+      )}
       <ins
+        ref={adRef}
         className="adsbygoogle"
-        style={{ display: "block" }}
+        style={{ display: adLoaded ? "block" : "none" }}
         data-ad-client={process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID}
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
