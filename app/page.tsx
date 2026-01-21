@@ -231,10 +231,10 @@ export default function Home() {
         </h1>
         <div className="mt-1 flex gap-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
           <span className="flex items-center gap-1">
-            Score: <span className="text-zinc-900">{partyCorrect}/{guesses.length || 0}</span>
+            Pontos: <span className="text-zinc-900">{partyCorrect}/{guesses.length || 0}</span>
           </span>
           <span className="flex items-center gap-1">
-            Eficácia: <span className="text-zinc-900">{accuracy}%</span>
+            Precisão: <span className="text-zinc-900">{accuracy}%</span>
           </span>
         </div>
         <Link

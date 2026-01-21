@@ -40,7 +40,7 @@ function AccuracyCircle({ percent }: { percent: number }) {
       <div className="absolute flex flex-col items-center">
         <span className="text-5xl font-black tracking-tighter">{Math.round(percent)}%</span>
         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mt-1">
-          Eficácia
+          Precisão
         </span>
       </div>
     </div>
@@ -413,7 +413,7 @@ export default function InsightsPage() {
                     {item.party}
                   </span>
                   <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    {Math.round(item.accuracy)}% eficácia
+                    {Math.round(item.accuracy)}% precisão
                   </span>
                 </div>
               ))}
