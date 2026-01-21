@@ -159,77 +159,87 @@ export default function SwipeCard({
   }, [activeOption, persistentSelections]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex items-center justify-center">
       {/* Polygon Options Visualization */}
-      {options && (
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          {options.map((option, index) => {
-            const angle = (index * 360) / options.length;
-            const rad = (angle * Math.PI) / 180;
-            const radius = dynamicRadius;
-            const x = Math.cos(rad) * radius;
-            const y = Math.sin(rad) * radius;
-            const isActive = activeOptionIndex === index;
-            
-            // Scaled bubble size
-            const bubbleSize = Math.max(36, Math.min(52, dynamicRadius * 0.3));
-            
-            return (
-              <div
-                key={option.id}
-                className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center transition-all duration-300 ${
-                  isActive ? "z-30 opacity-100" : isDragging ? "opacity-20" : ""
-                }`}
-                style={{
-                  transformOrigin: "center center",
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.4 : 1})`,
-                  opacity: isActive ? 1 : isDragging ? 0.1 : (option.opacity ?? 0.3),
+      {options && isDragging && (
+        <div className="absolute z-20 pointer-events-none" style={{ 
+          left: '50%', 
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: `${dimensions.width}px`,
+          height: `${dimensions.height}px`
+        }}>
+        {options.map((option, index) => {
+          const angle = (index * 360) / options.length;
+          const rad = (angle * Math.PI) / 180;
+          const radius = dynamicRadius;
+          const x = Math.cos(rad) * radius;
+          const y = Math.sin(rad) * radius;
+          const isActive = activeOptionIndex === index;
+          
+          // Scaled bubble size
+          const bubbleSize = Math.max(36, Math.min(52, dynamicRadius * 0.3));
+          
+          return (
+            <div
+              key={option.id}
+              className={`absolute flex flex-col items-center justify-center transition-all duration-300 ${
+                isActive ? "z-30 opacity-100" : isDragging ? "opacity-20" : ""
+              }`}
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.4 : 1})`,
+                opacity: isActive ? 1 : isDragging ? 0.1 : (option.opacity ?? 0.3),
+              }}
+            >
+              <div 
+                className="rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-white font-black italic"
+                style={{ 
+                  backgroundColor: option.color,
+                  width: `${bubbleSize}px`,
+                  height: `${bubbleSize}px`,
+                  fontSize: `${bubbleSize * 0.20}px`,
                 }}
               >
-                <div 
-                  className="rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-white font-black italic"
-                  style={{ 
-                    backgroundColor: option.color,
-                    width: `${bubbleSize}px`,
-                    height: `${bubbleSize}px`,
-                    fontSize: `${bubbleSize * 0.20}px`,
-                  }}
-                >
-                  {option.label}
-                </div>
+                {option.label}
               </div>
-            );
-          })}
-          
-          {/* Active Direction Line */}
-          {isDragging && distance > dynamicRadius * 0.3 && (
-            <div 
-              className="absolute left-1/2 top-1/2 h-1 bg-white/30 origin-left rounded-full"
-              style={{
-                width: `${Math.min(distance, dynamicRadius * 1.2)}px`,
-                transform: `translate(0, -50%) rotate(${(Math.atan2(dragOffset.y, dragOffset.x) * 180) / Math.PI}deg)`,
-              }}
-            />
-          )}
+            </div>
+          );
+        })}
+        
+        {/* Active Direction Line */}
+        {isDragging && distance > dynamicRadius * 0.3 && (
+          <div 
+            className="absolute h-1 bg-white/30 origin-left rounded-full"
+            style={{
+              left: '50%',
+              top: '50%',
+              width: `${Math.min(distance, dynamicRadius * 1.2)}px`,
+              transform: `translate(0, -50%) rotate(${(Math.atan2(dragOffset.y, dragOffset.x) * 180) / Math.PI}deg)`,
+            }}
+          />
+        )}
         </div>
       )}
 
-      <article
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        style={{
-          transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
-          opacity,
-          transition: isDragging ? "border-color 0.2s ease-in-out" : "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
-          touchAction: "none",
-          cursor: isDragging ? "grabbing" : (disabled || showParty ? "default" : "grab"),
-          borderColor: activeBorderColor,
-        }}
-        className={`w-[82%] aspect-[3/4] overflow-hidden rounded-[2rem] border-[6px] bg-white shadow-2xl shadow-zinc-400/50 ${className ?? ""}`}
-      >
-        <div className="relative w-full bg-zinc-100">
+      <div ref={containerRef} className="relative w-[82%] aspect-[3/4]">
+        <article
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          style={{
+            transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
+            opacity,
+            transition: isDragging ? "border-color 0.2s ease-in-out" : "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
+            touchAction: "none",
+            cursor: isDragging ? "grabbing" : (disabled || showParty ? "default" : "grab"),
+            borderColor: activeBorderColor,
+          }}
+          className={`w-full h-full overflow-hidden rounded-[2rem] border-[6px] bg-white shadow-2xl shadow-zinc-400/50 ${className ?? ""}`}
+        >
+          <div className="relative w-full h-full bg-zinc-100">
           {/* Persistent Selections Bar */}
           {persistentSelections && persistentSelections.length > 0 && (
             <div className="absolute top-4 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
@@ -318,7 +328,8 @@ export default function SwipeCard({
             </div>
           )}
         </div>
-      </article>
+        </article>
+      </div>
     </div>
   );
 }

@@ -1,15 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useId } from "react";
 
 import deputados from "@/src/data/deputados.json";
-import {
-  partiesByBloc,
-  partyMeta,
-  type Bloc,
-  type Party,
-} from "@/src/data/parties";
+import { partyMeta, type Bloc, type Party } from "@/src/data/parties";
 import SwipeCard from "@/src/components/SwipeCard";
 import { useGame, type Guess } from "@/src/context/GameContext";
 import AdBanner from "@/src/components/AdBanner";
@@ -22,10 +17,26 @@ type Deputy = {
   photoUrl: string;
 };
 
-function shuffle<T>(items: T[]) {
+function hashStringToSeed(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash >>> 0;
+}
+
+function seededRandom(seed: number) {
+  let t = seed + 0x6d2b79f5;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function shuffleWithSeed<T>(items: T[], seed: number) {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
@@ -37,7 +48,11 @@ function getBlocForParty(party: Party) {
 
 export default function Home() {
   const { guesses, addGuess } = useGame();
-  const [deck] = useState(() => shuffle(deputados as Deputy[]));
+  const seedId = useId();
+  const deck = useMemo(() => {
+    const seed = hashStringToSeed(seedId);
+    return shuffleWithSeed(deputados as Deputy[], seed);
+  }, [seedId]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
   const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
@@ -84,12 +99,16 @@ export default function Home() {
       ];
     }
     
-    // In party or reveal round, show all parties but fade non-relevant ones if in party mode
+    // In party or reveal round, show only parties from the selected bloc
     const effectiveBloc = blocGuess || lastResult?.blocGuess;
-    return allPartyOptions.map(opt => ({
-      ...opt,
-      opacity: round === "party" && effectiveBloc && opt.bloc !== effectiveBloc ? 0.1 : 0.6
-    }));
+    if (round === "party" && effectiveBloc) {
+      return allPartyOptions
+        .filter(opt => opt.bloc === effectiveBloc)
+        .map(opt => ({ ...opt, opacity: 0.6 }));
+    }
+    
+    // In reveal, show all parties
+    return allPartyOptions.map(opt => ({ ...opt, opacity: 0.6 }));
   }, [round, blocGuess, lastResult, allPartyOptions]);
 
   const handleBlocSelect = (bloc: Bloc) => {
