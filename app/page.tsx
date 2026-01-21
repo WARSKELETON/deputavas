@@ -283,7 +283,7 @@ export default function Home() {
             {round === "bloc" && (
               <div className="flex flex-col items-center w-full">
                 <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-6">
-                  Desliza para adivinhar o bloco
+                  Desliza para adivinhar
                 </p>
               </div>
             )}
