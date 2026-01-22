@@ -1,0 +1,23 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="32" height="32" rx="6" fill="#F0F2F5"/>
+  
+  <!-- Left accent (PS red) -->
+  <circle cx="2" cy="16" r="14" fill="#E11D48" fill-opacity="0.15"/>
+  
+  <!-- Right accent (PSD orange) -->
+  <circle cx="30" cy="16" r="14" fill="#F59E0B" fill-opacity="0.15"/>
+  
+  <!-- Card shape -->
+  <rect x="7" y="3" width="18" height="21" rx="3" fill="white" stroke="#D4D4D8" stroke-width="1.5"/>
+  
+  <!-- Question mark -->
+  <text x="16" y="19" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="15" font-weight="900" fill="#1A1A1B" text-anchor="middle">?</text>
+  
+  <!-- Party color strip at bottom - simplified -->
+  <rect x="2" y="27" width="5.6" height="3" rx="1" fill="#E11D48"/>
+  <rect x="8.2" y="27" width="5.6" height="3" rx="1" fill="#C3D500"/>
+  <rect x="14.4" y="27" width="5.6" height="3" rx="1" fill="#00AB85"/>
+  <rect x="20.6" y="27" width="5.6" height="3" rx="1" fill="#F59E0B"/>
+  <rect x="26.8" y="27" width="3.2" height="3" rx="1" fill="#0EA5E9"/>
+</svg>

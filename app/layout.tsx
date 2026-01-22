@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   description: "Consegues adivinhar o partido político dos deputados portugueses? Testa os teus conhecimentos neste jogo de swipe!",
   keywords: ["deputados", "portugal", "política", "jogo", "quiz", "assembleia da república", "partidos"],
   authors: [{ name: "Deputavas" }],
+  icons: {
+    icon: "/icon.svg",
+  },
   openGraph: {
     type: "website",
     locale: "pt_PT",
