@@ -66,8 +66,9 @@ export default function Home() {
 
   const handleNext = useCallback(() => {
     const nextIndex = currentIndex + 1;
-    // Show ad break every 5 guesses
-    if (nextIndex > 0 && nextIndex % 5 === 0 && nextIndex < total) {
+    // Show ad break after 3 cards, then every 5 cards after that
+    const shouldShowAd = nextIndex === 3 || (nextIndex > 3 && (nextIndex - 3) % 5 === 0);
+    if (shouldShowAd && nextIndex < total) {
       setShowAdBreak(true);
       posthog.capture('ad_break_shown', { index: nextIndex });
     }
