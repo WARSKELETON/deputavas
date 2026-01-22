@@ -317,7 +317,7 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-6">
           <div className="w-full max-w-sm rounded-4xl bg-white p-8 text-center shadow-2xl">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-4">
-              Pausa para publicidade
+              Pausa para reclame
             </p>
             <div className="my-4">
               <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="rectangle" />
