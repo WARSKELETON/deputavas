@@ -47,7 +47,7 @@ export default function AdBanner({
       {!adLoaded && (
         <div className="flex items-center justify-center bg-zinc-100 rounded-lg border border-zinc-200 border-dashed py-4 px-6 min-h-[60px]">
           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-            Publicidade
+            Reclame
           </span>
         </div>
       )}
