@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { usePostHog } from "posthog-js/react";
 
 import deputados from "@/src/data/deputados.json";
 import { partyMeta, type Bloc, type Party } from "@/src/data/parties";
@@ -38,6 +39,7 @@ function getBlocForParty(party: Party) {
 }
 
 export default function Home() {
+  const posthog = usePostHog();
   const { guesses, addGuess } = useGame();
   const [clientSeed, setClientSeed] = useState<number | null>(null);
   
@@ -46,7 +48,8 @@ export default function Home() {
     // This one-time initialization is intentional and necessary
     // eslint-disable-next-line
     setClientSeed(Math.floor(Math.random() * 1000000));
-  }, []);
+    posthog.capture('game_started');
+  }, [posthog]);
   
   const deck = useMemo(() => {
     const seed = clientSeed ?? 0;
@@ -66,12 +69,13 @@ export default function Home() {
     // Show ad break every 5 guesses
     if (nextIndex > 0 && nextIndex % 5 === 0 && nextIndex < total) {
       setShowAdBreak(true);
+      posthog.capture('ad_break_shown', { index: nextIndex });
     }
     setCurrentIndex(nextIndex);
     setBlocGuess(null);
     setLastResult(null);
     setRound("bloc");
-  }, [currentIndex, total]);
+  }, [currentIndex, total, posthog]);
   const blocCorrect = guesses.filter((guess) => guess.isBlocCorrect).length;
   const partyCorrect = guesses.filter((guess) => guess.isPartyCorrect).length;
 
@@ -118,6 +122,11 @@ export default function Home() {
 
   const handleBlocSelect = (bloc: Bloc) => {
     if (round !== "bloc") return;
+    posthog.capture('bloc_guessed', {
+      bloc,
+      deputy_id: currentDeputy?.id,
+      deputy_name: currentDeputy?.name
+    });
     setBlocGuess(bloc);
     setRound("party");
   };
@@ -144,6 +153,20 @@ export default function Home() {
 
   const handlePartySelect = (party: Party) => {
     if (round !== "party" || !blocGuess || !currentDeputy || !actualBloc || !actualParty) return;
+    const isBlocCorrect = blocGuess === actualBloc;
+    const isPartyCorrect = party === actualParty;
+
+    posthog.capture('party_guessed', {
+      party_guess: party,
+      party_actual: actualParty,
+      bloc_guess: blocGuess,
+      bloc_actual: actualBloc,
+      is_bloc_correct: isBlocCorrect,
+      is_party_correct: isPartyCorrect,
+      deputy_id: currentDeputy.id,
+      deputy_name: currentDeputy.name
+    });
+
     const result: Guess = {
       id: currentDeputy.id,
       name: currentDeputy.name,
@@ -151,8 +174,8 @@ export default function Home() {
       bloc: actualBloc,
       blocGuess,
       partyGuess: party,
-      isBlocCorrect: blocGuess === actualBloc,
-      isPartyCorrect: party === actualParty,
+      isBlocCorrect,
+      isPartyCorrect,
     };
     addGuess(result);
     setLastResult(result);
@@ -167,6 +190,17 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [round, handleNext]);
+
+  useEffect(() => {
+    if (isComplete) {
+      posthog.capture('game_completed', {
+        total_guesses: guesses.length,
+        party_correct: partyCorrect,
+        bloc_correct: blocCorrect,
+        accuracy
+      });
+    }
+  }, [isComplete, posthog, guesses.length, partyCorrect, blocCorrect, accuracy]);
 
   if (clientSeed === null) {
     return null;
@@ -196,12 +230,16 @@ export default function Home() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <button
               className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                posthog.capture('play_again_clicked', { location: 'completion_card' });
+                window.location.reload();
+              }}
             >
               Jogar outra vez
             </button>
             <Link
               href="/insights"
+              onClick={() => posthog.capture('view_insights_clicked', { location: 'completion_card' })}
               className="rounded-full border border-zinc-200 px-6 py-3 text-sm font-semibold text-zinc-700"
             >
               Ver insights
@@ -239,6 +277,7 @@ export default function Home() {
         </div>
         <Link
           href="/insights"
+          onClick={() => posthog.capture('view_insights_clicked', { location: 'header' })}
           className="absolute right-6 top-6 text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-600 transition-colors"
         >
           Estatísticas
@@ -323,7 +362,10 @@ export default function Home() {
               <AdBanner adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID!} adFormat="rectangle" />
             </div>
             <button
-              onClick={() => setShowAdBreak(false)}
+              onClick={() => {
+                posthog.capture('ad_break_continued');
+                setShowAdBreak(false);
+              }}
               className="mt-4 w-full rounded-2xl bg-[#1A1A1B] py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-all active:scale-95"
             >
               Continuar a jogar
@@ -350,12 +392,18 @@ export default function Home() {
             </div>
             <div className="mt-10 flex flex-col gap-4">
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  posthog.capture('play_again_clicked', { location: 'completion_modal' });
+                  window.location.reload();
+                }}
                 className="w-full rounded-2xl bg-[#1A1A1B] py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-all active:scale-95"
               >
                 Jogar de Novo
               </button>
-              <button className="w-full rounded-2xl border-2 border-zinc-200 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-600 transition-all active:scale-95">
+              <button 
+                onClick={() => posthog.capture('share_results_clicked')}
+                className="w-full rounded-2xl border-2 border-zinc-200 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-600 transition-all active:scale-95"
+              >
                 Partilhar Resultados
               </button>
             </div>

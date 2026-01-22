@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { usePostHog } from "posthog-js/react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
 import { useGame, type Guess } from "@/src/context/GameContext";
@@ -305,7 +306,14 @@ function SegmentedBar({
 }
 
 export default function InsightsPage() {
+  const posthog = usePostHog();
   const { guesses: results } = useGame();
+
+  useEffect(() => {
+    posthog.capture('insights_viewed', {
+      total_results: results.length
+    });
+  }, [posthog, results.length]);
 
   const summary = useMemo(() => {
     const total = results.length;
@@ -389,6 +397,7 @@ export default function InsightsPage() {
         </p>
         <Link
           href="/"
+          onClick={() => posthog.capture('back_to_game_clicked')}
           className="mt-6 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-900 transition-colors"
         >
           ← Voltar ao jogo

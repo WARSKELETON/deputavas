@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 
 declare global {
   interface Window {
@@ -21,6 +22,7 @@ export default function AdBanner({
   fullWidthResponsive = true,
   className = "",
 }: AdBannerProps) {
+  const posthog = usePostHog();
   const adRef = useRef<HTMLModElement>(null);
   const [adLoaded, setAdLoaded] = useState(false);
 
@@ -35,11 +37,12 @@ export default function AdBanner({
     const timer = setTimeout(() => {
       if (adRef.current && adRef.current.offsetHeight > 0) {
         setAdLoaded(true);
+        posthog.capture('ad_loaded', { ad_slot: adSlot, ad_format: adFormat });
       }
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [adSlot, adFormat, posthog]);
 
   return (
     <div className={`ad-container relative ${className}`}>

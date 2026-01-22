@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { GameProvider } from "@/src/context/GameContext";
 import Script from "next/script";
 import "./globals.css";
+import { PostHogProvider } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,7 +57,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GameProvider>{children}</GameProvider>
+        <PostHogProvider>
+          <GameProvider>{children}</GameProvider>
+        </PostHogProvider>
+        
         {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
           <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID}`}
