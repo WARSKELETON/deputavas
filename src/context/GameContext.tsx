@@ -40,6 +40,7 @@ export const BADGE_DETAILS: Record<BadgeId, { title: string; description: string
 };
 
 const STREAK_STORAGE_KEY = "deputavasStreaks";
+const GUESSES_STORAGE_KEY = "deputavasGuesses";
 
 const DEFAULT_STREAK_STATE: StreakState = {
   lastPlayedDate: null,
@@ -93,6 +94,30 @@ function parseStoredStreakState(raw: string | null): StreakState {
   }
 }
 
+function parseStoredGuesses(raw: string | null): Guess[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((guess): guess is Guess => {
+      return (
+        typeof guess === "object" &&
+        guess !== null &&
+        typeof guess.id === "string" &&
+        typeof guess.name === "string" &&
+        typeof guess.party === "string" &&
+        typeof guess.bloc === "string" &&
+        typeof guess.blocGuess === "string" &&
+        typeof guess.partyGuess === "string" &&
+        typeof guess.isBlocCorrect === "boolean" &&
+        typeof guess.isPartyCorrect === "boolean"
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
 interface GameContextType {
   guesses: Guess[];
   addGuess: (guess: Guess) => void;
@@ -116,6 +141,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("deputadosGuessResults");
       sessionStorage.removeItem("deputadosGuessResults");
       setStreakState(parseStoredStreakState(localStorage.getItem(STREAK_STORAGE_KEY)));
+      setGuesses(parseStoredGuesses(localStorage.getItem(GUESSES_STORAGE_KEY)));
     }
   }, []);
 
@@ -124,6 +150,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify(streakState));
     }
   }, [streakState]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(GUESSES_STORAGE_KEY, JSON.stringify(guesses));
+    }
+  }, [guesses]);
 
   const addGuess = (guess: Guess) => {
     setGuesses((prev) => [...prev, guess]);

@@ -11,6 +11,7 @@ import SwipeCard from "@/src/components/SwipeCard";
 import { useGame, type Guess } from "@/src/context/GameContext";
 import { encodeGuesses } from "@/src/utils/encoding";
 import AdBanner from "@/src/components/AdBanner";
+import { clearGameState } from "@/src/utils/gameStorage";
 
 type Deputy = {
   id: string;
@@ -47,32 +48,116 @@ function getLocalDateString(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+const GAME_STATE_STORAGE_KEY = "deputavasGameState";
+
+type GameState = {
+  clientSeed: number;
+  currentIndex: number;
+  round: "bloc" | "party" | "reveal";
+  blocGuess: Bloc | null;
+  lastResult: Guess | null;
+  showAdBreak: boolean;
+};
+
+function loadGameState(): GameState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(GAME_STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<GameState>;
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      typeof parsed.clientSeed !== "number" ||
+      typeof parsed.currentIndex !== "number" ||
+      typeof parsed.round !== "string"
+    ) {
+      return null;
+    }
+    return {
+      clientSeed: parsed.clientSeed,
+      currentIndex: parsed.currentIndex,
+      round: parsed.round as "bloc" | "party" | "reveal",
+      blocGuess: parsed.blocGuess ?? null,
+      lastResult: parsed.lastResult ?? null,
+      showAdBreak: parsed.showAdBreak ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveGameState(state: GameState) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(GAME_STATE_STORAGE_KEY, JSON.stringify(state));
+}
+
 export default function Home() {
   const router = useRouter();
   const posthog = usePostHog();
-  const { guesses, addGuess, recordCompletion } = useGame();
-  const [clientSeed, setClientSeed] = useState<number | null>(null);
+  const { guesses, addGuess, recordCompletion, clearGuesses } = useGame();
   
+  // Lazy initialization: load saved state or create new game
+  const [clientSeed] = useState<number>(() => {
+    const savedState = loadGameState();
+    return savedState?.clientSeed ?? Math.floor(Math.random() * 1000000);
+  });
+  
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const savedState = loadGameState();
+    return savedState?.currentIndex ?? 0;
+  });
+  
+  const [round, setRound] = useState<"bloc" | "party" | "reveal">(() => {
+    const savedState = loadGameState();
+    return savedState?.round ?? "bloc";
+  });
+  
+  const [blocGuess, setBlocGuess] = useState<Bloc | null>(() => {
+    const savedState = loadGameState();
+    return savedState?.blocGuess ?? null;
+  });
+  
+  const [lastResult, setLastResult] = useState<Guess | null>(() => {
+    const savedState = loadGameState();
+    return savedState?.lastResult ?? null;
+  });
+  
+  const [showAdBreak, setShowAdBreak] = useState(() => {
+    const savedState = loadGameState();
+    return savedState?.showAdBreak ?? false;
+  });
+
+  // Capture analytics for new game (only on mount, when there are no saved guesses)
   useEffect(() => {
-    // Initialize random seed once on client mount to avoid hydration mismatch
-    // This one-time initialization is intentional and necessary
-    // eslint-disable-next-line
-    setClientSeed(Math.floor(Math.random() * 1000000));
-    posthog.capture('game_started');
-  }, [posthog]);
+    const savedState = loadGameState();
+    if (!savedState && guesses.length === 0) {
+      posthog.capture('game_started');
+    }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const deck = useMemo(() => {
     const seed = clientSeed ?? 0;
     return shuffleWithSeed(deputados as Deputy[], seed);
   }, [clientSeed]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
-  const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
-  const [lastResult, setLastResult] = useState<Guess | null>(null);
-  const [showAdBreak, setShowAdBreak] = useState(false);
 
   const currentDeputy = deck[currentIndex];
   const total = deck.length;
+
+  // Save game state whenever it changes
+  useEffect(() => {
+    if (clientSeed === null) return;
+    saveGameState({
+      clientSeed,
+      currentIndex,
+      round,
+      blocGuess,
+      lastResult,
+      showAdBreak,
+    });
+  }, [clientSeed, currentIndex, round, blocGuess, lastResult, showAdBreak]);
 
   const handleNext = useCallback(() => {
     const nextIndex = currentIndex + 1;
@@ -210,6 +295,8 @@ export default function Home() {
         bloc_correct: blocCorrect,
         accuracy
       });
+      // Clear saved game state when game is completed
+      clearGameState();
     }
   }, [isComplete, posthog, guesses.length, partyCorrect, blocCorrect, accuracy]);
 
@@ -274,6 +361,8 @@ export default function Home() {
               className="rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white"
               onClick={() => {
                 posthog.capture('play_again_clicked', { location: 'completion_card' });
+                clearGameState();
+                clearGuesses();
                 window.location.reload();
               }}
             >
@@ -452,6 +541,8 @@ export default function Home() {
               <button
                 onClick={() => {
                   posthog.capture('play_again_clicked', { location: 'completion_modal' });
+                  clearGameState();
+                  clearGuesses();
                   window.location.reload();
                 }}
                 className="w-full rounded-2xl bg-[#1A1A1B] py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-all active:scale-95"

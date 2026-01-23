@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
 import { useGame, type Guess, BADGE_DETAILS, type BadgeId } from "@/src/context/GameContext";
 import deputadosData from "@/src/data/deputados.json";
+import { clearAllGameData } from "@/src/utils/gameStorage";
 
 function AccuracyCircle({ percent }: { percent: number }) {
   const radius = 36;
@@ -307,13 +308,22 @@ function SegmentedBar({
 
 export default function InsightsPage() {
   const posthog = usePostHog();
-  const { guesses: results, streakState } = useGame();
+  const { guesses: results, streakState, clearGuesses } = useGame();
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   useEffect(() => {
     posthog.capture('insights_viewed', {
       total_results: results.length
     });
   }, [posthog, results.length]);
+
+  const handleResetGame = () => {
+    posthog.capture('game_reset', { from: 'insights' });
+    clearAllGameData();
+    clearGuesses();
+    setShowResetDialog(false);
+    window.location.href = '/';
+  };
 
   const summary = useMemo(() => {
     const total = results.length;
@@ -414,6 +424,12 @@ export default function InsightsPage() {
           <p className="mt-4 text-zinc-500 text-sm">
             Faz algumas rondas para veres os teus insights aqui.
           </p>
+          <button
+            onClick={() => setShowResetDialog(true)}
+            className="mt-8 text-[10px] font-black uppercase tracking-widest text-red-600 hover:text-red-700 transition-colors"
+          >
+            Reiniciar dados do jogo
+          </button>
         </div>
       ) : (
         <main className="mx-auto flex w-full max-w-md flex-col gap-6">
@@ -545,7 +561,51 @@ export default function InsightsPage() {
               rightColor="bg-amber-500"
             />
           </section>
+
+          {/* Reset Button */}
+          <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-4">
+              Reiniciar Jogo
+            </h2>
+            <p className="text-sm text-zinc-500 mb-6">
+              Remove todos os dados guardados e começa um jogo novo. Esta ação não pode ser desfeita.
+            </p>
+            <button
+              onClick={() => setShowResetDialog(true)}
+              className="w-full rounded-2xl bg-red-600 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-all active:scale-95 hover:bg-red-700"
+            >
+              Reiniciar Jogo
+            </button>
+          </section>
         </main>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-6">
+          <div className="w-full max-w-sm rounded-[2.5rem] bg-white p-10 text-center shadow-2xl">
+            <h2 className="text-2xl font-black uppercase italic tracking-tighter text-[#1A1A1B]">
+              Tens a certeza?
+            </h2>
+            <p className="mt-4 text-sm text-zinc-600">
+              Vais perder todos os teus progressos, incluindo guesses, streaks e badges. Esta ação não pode ser desfeita.
+            </p>
+            <div className="mt-8 flex flex-col gap-3">
+              <button
+                onClick={handleResetGame}
+                className="w-full rounded-2xl bg-red-600 py-4 text-xs font-black uppercase tracking-[0.2em] text-white transition-all active:scale-95 hover:bg-red-700"
+              >
+                Sim, reiniciar tudo
+              </button>
+              <button
+                onClick={() => setShowResetDialog(false)}
+                className="w-full rounded-2xl border-2 border-zinc-200 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-900 transition-all active:scale-95 hover:bg-zinc-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
