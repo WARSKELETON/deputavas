@@ -18,7 +18,7 @@ export default function ShareActions({
   const posthog = usePostHog();
 
   const handleCopy = async () => {
-    posthog.capture("share_link_copied");
+    posthog.capture("share_action_clicked", { action: "copy" });
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareUrl);
@@ -54,7 +54,7 @@ export default function ShareActions({
     };
 
     try {
-      posthog.capture("native_share_clicked");
+      posthog.capture("share_action_clicked", { action: "native" });
       await navigator.share(shareData);
     } catch (err) {
       // User likely cancelled
@@ -89,7 +89,7 @@ export default function ShareActions({
         href={twitterUrl}
         target="_blank"
         rel="noreferrer"
-        onClick={() => posthog.capture("share_x_clicked")}
+        onClick={() => posthog.capture("share_action_clicked", { action: "x" })}
         className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-700 text-center transition hover:border-zinc-300"
       >
         Partilhar no X
@@ -98,7 +98,9 @@ export default function ShareActions({
         href={whatsappUrl}
         target="_blank"
         rel="noreferrer"
-        onClick={() => posthog.capture("share_whatsapp_clicked")}
+        onClick={() =>
+          posthog.capture("share_action_clicked", { action: "whatsapp" })
+        }
         className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-700 text-center transition hover:border-zinc-300"
       >
         Partilhar no WhatsApp

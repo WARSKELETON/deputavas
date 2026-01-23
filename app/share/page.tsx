@@ -25,8 +25,6 @@ export const metadata: Metadata = {
 
 export default function SharePage() {
   return (
-    <Suspense fallback={null}>
-      <ShareClient />
-    </Suspense>
+    <ShareClient />
   );
 }
