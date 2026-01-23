@@ -370,7 +370,7 @@ export default function Home() {
             </Link>
             <button
               onClick={handleShareResults}
-              className="rounded-full border-2 px-6 py-3 text-sm font-bold text-zinc-900 animate-pulsate-party transition-all active:scale-95"
+              className="rounded-full border-2 px-6 py-3 text-base font-bold text-zinc-900 animate-pulsate-party transition-all active:scale-95"
             >
               Partilhar resultados
             </button>
@@ -483,9 +483,9 @@ export default function Home() {
             <button
               type="button"
               onClick={handleShareResults}
-              className="w-full max-w-[280px] rounded-4xl border-2 py-4 text-[9px] font-black uppercase tracking-[0.3em] text-zinc-900 animate-pulsate-party transition-all active:scale-95"
+              className="w-full max-w-[280px] rounded-4xl border-2 py-4 text-xs font-black uppercase tracking-[0.3em] text-zinc-900 animate-pulsate-party transition-all active:scale-95"
             >
-              Partilhar Resultados
+              Deputa um amigo teu
             </button>
           )}
         </div>
