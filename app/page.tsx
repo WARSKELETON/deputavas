@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePostHog } from "posthog-js/react";
 
@@ -8,6 +9,7 @@ import deputados from "@/src/data/deputados.json";
 import { partyMeta, type Bloc, type Party } from "@/src/data/parties";
 import SwipeCard from "@/src/components/SwipeCard";
 import { useGame, type Guess } from "@/src/context/GameContext";
+import { encodeGuesses } from "@/src/utils/encoding";
 import AdBanner from "@/src/components/AdBanner";
 
 type Deputy = {
@@ -38,9 +40,17 @@ function getBlocForParty(party: Party) {
   return partyMeta[party]?.bloc ?? "left";
 }
 
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function Home() {
+  const router = useRouter();
   const posthog = usePostHog();
-  const { guesses, addGuess } = useGame();
+  const { guesses, addGuess, recordCompletion } = useGame();
   const [clientSeed, setClientSeed] = useState<number | null>(null);
   
   useEffect(() => {
@@ -203,6 +213,37 @@ export default function Home() {
     }
   }, [isComplete, posthog, guesses.length, partyCorrect, blocCorrect, accuracy]);
 
+  useEffect(() => {
+    if (!isComplete || guesses.length === 0) return;
+    recordCompletion({
+      total: guesses.length,
+      correct: partyCorrect,
+    });
+  }, [isComplete, guesses.length, partyCorrect, recordCompletion]);
+
+  const buildShareUrl = useCallback(() => {
+    if (typeof window === "undefined") return "";
+    const url = new URL("/share", window.location.origin);
+    url.searchParams.set("score", String(partyCorrect));
+    url.searchParams.set("total", String(guesses.length));
+    url.searchParams.set("accuracy", String(accuracy));
+    if (guesses.length > 0) {
+      url.searchParams.set("g", encodeGuesses(guesses));
+    }
+    return url.toString();
+  }, [partyCorrect, guesses, accuracy]);
+
+  const handleShareResults = useCallback(() => {
+    const shareUrl = buildShareUrl();
+    if (!shareUrl) return;
+    posthog.capture("share_results_clicked", {
+      score: partyCorrect,
+      total: guesses.length,
+      accuracy,
+    });
+    router.push(shareUrl);
+  }, [buildShareUrl, posthog, partyCorrect, guesses.length, accuracy, router]);
+
   if (clientSeed === null) {
     return null;
   }
@@ -225,7 +266,7 @@ export default function Home() {
               Partido certo: {partyCorrect}/{guesses.length}
             </span>
             <span className="rounded-full border border-zinc-200 px-3 py-1">
-              Precisao: {accuracy}%
+              Precisão: {accuracy}%
             </span>
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
@@ -245,6 +286,12 @@ export default function Home() {
             >
               Ver insights
             </Link>
+            <button
+              onClick={handleShareResults}
+              className="rounded-full border-2 px-6 py-3 text-sm font-bold text-zinc-900 animate-pulsate-party transition-all active:scale-95"
+            >
+              Partilhar resultados
+            </button>
           </div>
           
           {/* Ad placement - shows after game completion */}
@@ -322,7 +369,7 @@ export default function Home() {
           <div className="w-full flex flex-col items-center shrink-0">
             {round === "bloc" && (
               <div className="flex flex-col items-center w-full">
-                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-6">
+                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400">
                   Desliza para adivinhar
                 </p>
               </div>
@@ -330,7 +377,7 @@ export default function Home() {
 
             {round === "party" && (
               <div className="flex flex-col items-center w-full">
-                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-6">
+                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400">
                   Desliza para adivinhar o partido
                 </p>
               </div>
@@ -349,6 +396,16 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {guesses.length >= 2 && (
+            <button
+              type="button"
+              onClick={handleShareResults}
+              className="w-full max-w-[280px] rounded-4xl border-2 py-4 text-[9px] font-black uppercase tracking-[0.3em] text-zinc-900 animate-pulsate-party transition-all active:scale-95"
+            >
+              Partilhar Resultados
+            </button>
+          )}
         </div>
       </main>
 
@@ -402,8 +459,8 @@ export default function Home() {
                 Jogar de Novo
               </button>
               <button 
-                onClick={() => posthog.capture('share_results_clicked')}
-                className="w-full rounded-2xl border-2 border-zinc-200 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-600 transition-all active:scale-95"
+                onClick={handleShareResults}
+                className="w-full rounded-2xl border-2 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-900 animate-pulsate-party transition-all active:scale-95"
               >
                 Partilhar Resultados
               </button>

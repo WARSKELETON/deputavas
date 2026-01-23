@@ -24,6 +24,37 @@
 
   --animate-shake: shake 8s cubic-bezier(.36,.07,.19,.97) both infinite;
   --animate-flicker: flicker 2s ease-in-out infinite;
+
+  @keyframes pulsate-party-colors {
+    0% { border-color: #D4338F; box-shadow: 0 0 12px rgba(212, 51, 143, 0.2); }
+    10% { border-color: #FF9900; box-shadow: 0 0 12px rgba(255, 153, 0, 0.2); }
+    20% { border-color: #1D1C59; box-shadow: 0 0 12px rgba(29, 28, 89, 0.2); }
+    30% { border-color: #00ADEF; box-shadow: 0 0 12px rgba(0, 173, 239, 0.2); }
+    40% { border-color: #005C9E; box-shadow: 0 0 12px rgba(0, 92, 158, 0.2); }
+    50% { border-color: #E20613; box-shadow: 0 0 12px rgba(226, 6, 19, 0.2); }
+    60% { border-color: #B91C1C; box-shadow: 0 0 12px rgba(185, 28, 28, 0.2); }
+    70% { border-color: #C3D500; box-shadow: 0 0 12px rgba(195, 213, 0, 0.2); }
+    80% { border-color: #00667E; box-shadow: 0 0 12px rgba(0, 102, 126, 0.2); }
+    90% { border-color: #00AA85; box-shadow: 0 0 12px rgba(0, 170, 133, 0.2); }
+    100% { border-color: #D4338F; box-shadow: 0 0 12px rgba(212, 51, 143, 0.2); }
+  }
+
+  @keyframes pulsate-bg-party-colors {
+    0% { background-color: #D4338F; }
+    10% { background-color: #FF9900; }
+    20% { background-color: #1D1C59; }
+    30% { background-color: #00ADEF; }
+    40% { background-color: #005C9E; }
+    50% { background-color: #E20613; }
+    60% { background-color: #B91C1C; }
+    70% { background-color: #C3D500; }
+    80% { background-color: #00667E; }
+    90% { background-color: #00AA85; }
+    100% { background-color: #D4338F; }
+  }
+
+  --animate-pulsate-party: pulsate-party-colors 8s linear infinite;
+  --animate-pulsate-bg-party: pulsate-bg-party-colors 8s linear infinite;
 }
 
 @media (prefers-color-scheme: dark) {

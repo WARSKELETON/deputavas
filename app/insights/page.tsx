@@ -5,7 +5,7 @@ import { useMemo, useEffect } from "react";
 import { usePostHog } from "posthog-js/react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
-import { useGame, type Guess } from "@/src/context/GameContext";
+import { useGame, type Guess, BADGE_DETAILS, type BadgeId } from "@/src/context/GameContext";
 import deputadosData from "@/src/data/deputados.json";
 
 function AccuracyCircle({ percent }: { percent: number }) {
@@ -307,7 +307,7 @@ function SegmentedBar({
 
 export default function InsightsPage() {
   const posthog = usePostHog();
-  const { guesses: results } = useGame();
+  const { guesses: results, streakState } = useGame();
 
   useEffect(() => {
     posthog.capture('insights_viewed', {
@@ -386,6 +386,8 @@ export default function InsightsPage() {
     };
   }, [results]);
 
+  const badgeIds = useMemo(() => Object.keys(BADGE_DETAILS) as BadgeId[], []);
+
   return (
     <div className="min-h-screen bg-[#F0F2F5] px-6 py-12 text-zinc-900 font-sans">
       <header className="mx-auto flex w-full max-w-2xl flex-col items-center mb-12">
@@ -415,6 +417,47 @@ export default function InsightsPage() {
         </div>
       ) : (
         <main className="mx-auto flex w-full max-w-md flex-col gap-6">
+          <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6">
+              Streaks &amp; badges
+            </h2>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100/60">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Atual</p>
+                <p className="mt-2 text-xl font-black text-zinc-900">{streakState.currentStreak}</p>
+              </div>
+              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100/60">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Melhor</p>
+                <p className="mt-2 text-xl font-black text-zinc-900">{streakState.bestStreak}</p>
+              </div>
+              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100/60">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Dias</p>
+                <p className="mt-2 text-xl font-black text-zinc-900">{streakState.totalDaysPlayed}</p>
+              </div>
+            </div>
+            <div className="mt-8 grid grid-cols-1 gap-3">
+              {badgeIds.map((badgeId) => {
+                const badge = BADGE_DETAILS[badgeId];
+                const unlocked = streakState.badges.includes(badgeId);
+                return (
+                  <div
+                    key={badgeId}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      unlocked
+                        ? "border-emerald-200 bg-emerald-50"
+                        : "border-zinc-100 bg-zinc-50 text-zinc-400"
+                    }`}
+                  >
+                    <p className="text-sm font-black uppercase tracking-widest">
+                      {badge.title}
+                    </p>
+                    <p className="mt-2 text-xs font-medium">{badge.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
           {/* Parliament Visualization */}
           <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100 flex flex-col items-center">
             <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 self-start">
