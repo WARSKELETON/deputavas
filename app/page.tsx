@@ -41,13 +41,6 @@ function getBlocForParty(party: Party) {
   return partyMeta[party]?.bloc ?? "left";
 }
 
-function getLocalDateString(date = new Date()) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 const GAME_STATE_STORAGE_KEY = "deputavasGameState";
 
 type GameState = {

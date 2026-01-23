@@ -79,6 +79,11 @@ export default function SwipeCard({
   }, []);
 
   useEffect(() => {
+    // Reset idle timer when deputy changes or effect reinitializes
+    lastActivityRef.current = Date.now();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsIdle(false);
+    
     const checkIdle = setInterval(() => {
       const now = Date.now();
       if (now - lastActivityRef.current > 3000 && !isDragging && !showParty && !disabled) {
@@ -87,12 +92,7 @@ export default function SwipeCard({
     }, 1000);
 
     return () => clearInterval(checkIdle);
-  }, [isDragging, showParty, disabled]);
-
-  useEffect(() => {
-    // Reset idle state when deputy changes
-    resetIdleTimer();
-  }, [deputy, resetIdleTimer]);
+  }, [isDragging, showParty, disabled, deputy]);
 
   useEffect(() => {
     if (!containerRef.current) return;

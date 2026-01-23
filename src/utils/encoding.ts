@@ -1,5 +1,5 @@
 import { type Guess } from "../context/GameContext";
-import { type Party, type Bloc, partyMeta } from "../data/parties";
+import { type Party, partyMeta } from "../data/parties";
 import deputadosData from "../data/deputados.json";
 
 const PARTY_TO_CODE: Record<string, string> = {

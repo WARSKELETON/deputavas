@@ -132,18 +132,22 @@ interface GameContextType {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [guesses, setGuesses] = useState<Guess[]>([]);
-  const [streakState, setStreakState] = useState<StreakState>(DEFAULT_STREAK_STATE);
-
-  useEffect(() => {
-    // Cleanup old global/session storage from previous versions
+  const [guesses, setGuesses] = useState<Guess[]>(() => {
     if (typeof window !== "undefined") {
+      // Cleanup old global/session storage from previous versions
       localStorage.removeItem("deputadosGuessResults");
       sessionStorage.removeItem("deputadosGuessResults");
-      setStreakState(parseStoredStreakState(localStorage.getItem(STREAK_STORAGE_KEY)));
-      setGuesses(parseStoredGuesses(localStorage.getItem(GUESSES_STORAGE_KEY)));
+      return parseStoredGuesses(localStorage.getItem(GUESSES_STORAGE_KEY));
     }
-  }, []);
+    return [];
+  });
+  
+  const [streakState, setStreakState] = useState<StreakState>(() => {
+    if (typeof window !== "undefined") {
+      return parseStoredStreakState(localStorage.getItem(STREAK_STORAGE_KEY));
+    }
+    return DEFAULT_STREAK_STATE;
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
