@@ -62,11 +62,22 @@ export default function ShareActions({
     }
   };
 
+  const addUtmParams = (url: string, medium: string) => {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set("utm_source", "share");
+    urlObj.searchParams.set("utm_medium", medium);
+    urlObj.searchParams.set("utm_campaign", "share_button");
+    return urlObj.toString();
+  };
+
+  const twitterShareUrl = addUtmParams(shareUrl, "twitter");
+  const whatsappShareUrl = addUtmParams(shareUrl, "whatsapp");
+
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     text
-  )}&url=${encodeURIComponent(shareUrl)}`;
+  )}&url=${encodeURIComponent(twitterShareUrl)}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
-    `${text} ${shareUrl}`
+    `${text} ${whatsappShareUrl}`
   )}`;
 
   return (
