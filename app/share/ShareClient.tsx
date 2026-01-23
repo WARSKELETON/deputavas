@@ -377,7 +377,9 @@ export default function ShareClient() {
           <h1 className="mt-4 text-4xl font-black tracking-tighter text-[#1A1A1B] uppercase italic">
             {hasUtmParamsSet ? "O teu amigo Deputou" : "Partilha o que Deputaste"}
           </h1>
+          {hasUtmParamsSet ?
           <h2 className="text-2xl font-black uppercase tracking-[0.2em] text-zinc-600">Tu Deputas?</h2>
+          : null}
         </header>
 
         <main className="grid gap-6 lg:grid-cols-2">
