@@ -25,6 +25,8 @@ export const metadata: Metadata = {
 
 export default function SharePage() {
   return (
-    <ShareClient />
+    <Suspense fallback={<div>A processar o teu resultado...</div>}>
+      <ShareClient />
+    </Suspense>
   );
 }
