@@ -89,48 +89,43 @@ export default function Home() {
   const router = useRouter();
   const posthog = usePostHog();
   const { guesses, addGuess, recordCompletion, clearGuesses } = useGame();
-  
-  // Lazy initialization: load saved state or create new game
-  const [clientSeed] = useState<number>(() => {
+
+  // State initialization with defaults for SSR
+  const [clientSeed, setClientSeed] = useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [round, setRound] = useState<"bloc" | "party" | "reveal">("bloc");
+  const [blocGuess, setBlocGuess] = useState<Bloc | null>(null);
+  const [lastResult, setLastResult] = useState<Guess | null>(null);
+  const [showAdBreak, setShowAdBreak] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Load saved state or create new game on mount
+  useEffect(() => {
     const savedState = loadGameState();
-    return savedState?.clientSeed ?? Math.floor(Math.random() * 1000000);
-  });
-  
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    const savedState = loadGameState();
-    return savedState?.currentIndex ?? 0;
-  });
-  
-  const [round, setRound] = useState<"bloc" | "party" | "reveal">(() => {
-    const savedState = loadGameState();
-    return savedState?.round ?? "bloc";
-  });
-  
-  const [blocGuess, setBlocGuess] = useState<Bloc | null>(() => {
-    const savedState = loadGameState();
-    return savedState?.blocGuess ?? null;
-  });
-  
-  const [lastResult, setLastResult] = useState<Guess | null>(() => {
-    const savedState = loadGameState();
-    return savedState?.lastResult ?? null;
-  });
-  
-  const [showAdBreak, setShowAdBreak] = useState(() => {
-    const savedState = loadGameState();
-    return savedState?.showAdBreak ?? false;
-  });
+    if (savedState) {
+      setClientSeed(savedState.clientSeed);
+      setCurrentIndex(savedState.currentIndex);
+      setRound(savedState.round);
+      setBlocGuess(savedState.blocGuess);
+      setLastResult(savedState.lastResult);
+      setShowAdBreak(savedState.showAdBreak);
+    } else {
+      setClientSeed(Math.floor(Math.random() * 1000000));
+    }
+    setIsHydrated(true);
+  }, []);
 
   // Capture analytics for new game (only on mount, when there are no saved guesses)
   useEffect(() => {
-    const savedState = loadGameState();
-    if (!savedState && guesses.length === 0) {
-      posthog.capture('game_started');
+    if (isHydrated && guesses.length === 0) {
+      const savedState = loadGameState();
+      if (!savedState) {
+        posthog.capture('game_started');
+      }
     }
-    // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
+  }, [isHydrated]);
+
   const deck = useMemo(() => {
     const seed = clientSeed ?? 0;
     return shuffleWithSeed(deputados as Deputy[], seed);
@@ -196,7 +191,7 @@ export default function Home() {
         { id: "left", label: "ESQ", color: "#FF2157" },
       ];
     }
-    
+
     // In party or reveal round, show only parties from the selected bloc
     const effectiveBloc = blocGuess || lastResult?.blocGuess;
     if (round === "party" && effectiveBloc) {
@@ -204,7 +199,7 @@ export default function Home() {
         .filter(opt => opt.bloc === effectiveBloc)
         .map(opt => ({ ...opt, opacity: 0.6 }));
     }
-    
+
     // In reveal, show all parties
     return allPartyOptions.map(opt => ({ ...opt, opacity: 0.6 }));
   }, [round, blocGuess, lastResult, allPartyOptions]);
@@ -375,7 +370,7 @@ export default function Home() {
               Partilhar resultados
             </button>
           </div>
-          
+
           {/* Ad placement - shows after game completion */}
           {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
             <div className="mt-10 w-full max-w-md">
@@ -428,7 +423,7 @@ export default function Home() {
                 else if (round === "party") handlePartySelect(id as Party);
               }}
               selectionOverlay={(option) => (
-                <div 
+                <div
                   className="scale-90 rounded-xl px-6 py-3 shadow-2xl border-2 border-white animate-in zoom-in-95 duration-200 flex flex-col items-center"
                   style={{ backgroundColor: option.color }}
                 >
@@ -542,14 +537,14 @@ export default function Home() {
               >
                 Jogar de Novo
               </button>
-              <button 
+              <button
                 onClick={handleShareResults}
                 className="w-full rounded-2xl border-2 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-900 animate-pulsate-party transition-all active:scale-95"
               >
                 Partilhar Resultados
               </button>
             </div>
-            
+
             {/* Ad in modal */}
             {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
               <div className="mt-6">

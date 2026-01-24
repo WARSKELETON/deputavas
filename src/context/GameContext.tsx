@@ -132,34 +132,36 @@ interface GameContextType {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [guesses, setGuesses] = useState<Guess[]>(() => {
+  const [guesses, setGuesses] = useState<Guess[]>([]);
+  const [streakState, setStreakState] = useState<StreakState>(DEFAULT_STREAK_STATE);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       // Cleanup old global/session storage from previous versions
       localStorage.removeItem("deputadosGuessResults");
       sessionStorage.removeItem("deputadosGuessResults");
-      return parseStoredGuesses(localStorage.getItem(GUESSES_STORAGE_KEY));
+      
+      const storedGuesses = parseStoredGuesses(localStorage.getItem(GUESSES_STORAGE_KEY));
+      const storedStreak = parseStoredStreakState(localStorage.getItem(STREAK_STORAGE_KEY));
+      
+      setGuesses(storedGuesses);
+      setStreakState(storedStreak);
+      setIsHydrated(true);
     }
-    return [];
-  });
-  
-  const [streakState, setStreakState] = useState<StreakState>(() => {
-    if (typeof window !== "undefined") {
-      return parseStoredStreakState(localStorage.getItem(STREAK_STORAGE_KEY));
-    }
-    return DEFAULT_STREAK_STATE;
-  });
+  }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem(STREAK_STORAGE_KEY, JSON.stringify(streakState));
     }
-  }, [streakState]);
+  }, [streakState, isHydrated]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isHydrated && typeof window !== "undefined") {
       localStorage.setItem(GUESSES_STORAGE_KEY, JSON.stringify(guesses));
     }
-  }, [guesses]);
+  }, [guesses, isHydrated]);
 
   const addGuess = (guess: Guess) => {
     setGuesses((prev) => [...prev, guess]);
