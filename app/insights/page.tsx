@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useEffect, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
-import { useGame, type Guess, BADGE_DETAILS, type BadgeId } from "@/src/context/GameContext";
+import { useGame, type Guess } from "@/src/context/GameContext";
 import deputadosData from "@/src/data/deputados.json";
 import { clearAllGameData } from "@/src/utils/gameStorage";
 
@@ -308,7 +309,7 @@ function SegmentedBar({
 
 export default function InsightsPage() {
   const posthog = usePostHog();
-  const { guesses: results, streakState, clearGuesses } = useGame();
+  const { guesses: results, clearGuesses } = useGame();
   const [showResetDialog, setShowResetDialog] = useState(false);
 
   useEffect(() => {
@@ -376,7 +377,6 @@ export default function InsightsPage() {
       })
       .filter((s) => s.count > 0)
       .sort((a, b) => b.accuracy - a.accuracy || b.count - a.count)
-      .slice(0, 4);
 
     return {
       total,
@@ -396,7 +396,6 @@ export default function InsightsPage() {
     };
   }, [results]);
 
-  const badgeIds = useMemo(() => Object.keys(BADGE_DETAILS) as BadgeId[], []);
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] px-6 py-12 text-zinc-900 font-sans">
@@ -433,47 +432,6 @@ export default function InsightsPage() {
         </div>
       ) : (
         <main className="mx-auto flex w-full max-w-md flex-col gap-6">
-          <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100">
-            <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6">
-              Streaks &amp; badges
-            </h2>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100/60">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Atual</p>
-                <p className="mt-2 text-xl font-black text-zinc-900">{streakState.currentStreak}</p>
-              </div>
-              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100/60">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Melhor</p>
-                <p className="mt-2 text-xl font-black text-zinc-900">{streakState.bestStreak}</p>
-              </div>
-              <div className="rounded-2xl bg-zinc-50 p-4 border border-zinc-100/60">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Dias</p>
-                <p className="mt-2 text-xl font-black text-zinc-900">{streakState.totalDaysPlayed}</p>
-              </div>
-            </div>
-            <div className="mt-8 grid grid-cols-1 gap-3">
-              {badgeIds.map((badgeId) => {
-                const badge = BADGE_DETAILS[badgeId];
-                const unlocked = streakState.badges.includes(badgeId);
-                return (
-                  <div
-                    key={badgeId}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      unlocked
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-zinc-100 bg-zinc-50 text-zinc-400"
-                    }`}
-                  >
-                    <p className="text-sm font-black uppercase tracking-widest">
-                      {badge.title}
-                    </p>
-                    <p className="mt-2 text-xs font-medium">{badge.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
           {/* Parliament Visualization */}
           <section className="rounded-[2.5rem] bg-white p-10 shadow-xl shadow-zinc-200/50 border border-zinc-100 flex flex-col items-center">
             <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 self-start">
@@ -517,13 +475,21 @@ export default function InsightsPage() {
             <div className="grid grid-cols-2 gap-4">
               {summary.topParties.map((item) => (
                 <div
+                  style={{ backgroundColor: partyMeta[item.party].color + (["BE", "PAN", "IL", "JPP"].includes(item.party) ? "B3" : "FF") }}
                   key={item.party}
                   className="rounded-3xl bg-zinc-50 p-6 flex flex-col items-center justify-center text-center border border-zinc-100/50"
                 >
-                  <span className="text-xl font-black text-zinc-900">
-                    {item.party}
-                  </span>
-                  <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  <div className="h-16 flex items-center justify-center mb-2 w-full rounded-xl p-2">
+                    <div className="relative h-12 w-28">
+                      <Image
+                        src={partyMeta[item.party].logo}
+                        alt={item.party}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  </div>
+                  <span className="mt-1 text-[10px] font-black uppercase tracking-widest text-white">
                     {Math.round(item.accuracy)}% precisão
                   </span>
                 </div>
@@ -588,7 +554,7 @@ export default function InsightsPage() {
               Tens a certeza?
             </h2>
             <p className="mt-4 text-sm text-zinc-600">
-              Vais perder todos os teus progressos, incluindo guesses, streaks e badges. Esta ação não pode ser desfeita.
+              Vais perder todos os teus progressos, incluindo as tuas escolhas anteriores. Esta ação não pode ser desfeita.
             </p>
             <div className="mt-8 flex flex-col gap-3">
               <button
