@@ -380,8 +380,8 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#F0F2F5] text-zinc-900 font-sans overflow-hidden">
-      <header className="shrink-0 mx-auto flex w-full max-w-lg flex-col items-center px-6 pt-4 pb-2 relative">
+    <div className="h-screen flex flex-col bg-[#F0F2F5] text-zinc-900 font-sans overflow-y-auto overflow-x-hidden">
+      <header className="shrink-0 mx-auto flex w-full max-w-lg flex-col items-center px-6 pt-4 pb-2 sticky top-0 z-0 bg-[#F0F2F5]/80 backdrop-blur-md">
         <h1 className="text-3xl font-black tracking-tighter text-[#1A1A1B] uppercase italic">
           Deputavas?
         </h1>
@@ -406,7 +406,7 @@ export default function Home() {
         </Link>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-12 overflow-y-auto">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-12 relative z-10">
         <div className="w-full max-w-[380px] flex flex-col items-center gap-8">
           <div className="relative w-full aspect-3/4">
             <SwipeCard
