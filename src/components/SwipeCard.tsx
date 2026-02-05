@@ -238,7 +238,7 @@ export default function SwipeCard({
       onPointerCancel={handlePointerUp}
     >
       {/* Polygon Options Visualization */}
-      {options && (isDragging || isIdle) && (
+      {options && !showParty && (
         <div className="absolute z-20 pointer-events-none" style={{ 
           left: '50%', 
           top: '50%',
@@ -261,13 +261,13 @@ export default function SwipeCard({
             <div
               key={option.id}
               className={`absolute flex flex-col items-center justify-center transition-all duration-300 ${
-                isActive ? "z-30 opacity-100" : (isDragging || isIdle) ? "opacity-20" : ""
+                isActive ? "z-30 opacity-100" : (isDragging || isIdle) ? "opacity-20" : "opacity-100"
               } ${isIdle ? "animate-flicker" : ""}`}
               style={{
                 left: '50%',
                 top: '50%',
                 transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.4 : 1})`,
-                opacity: isActive ? 1 : isDragging ? 0.1 : (isIdle ? 0.3 : (option.opacity ?? 0.3)),
+                opacity: isActive ? 1 : 0.5
               }}
             >
               <div 
@@ -288,12 +288,13 @@ export default function SwipeCard({
         {/* Active Direction Line */}
         {isDragging && distance > dynamicRadius * 0.3 && (
           <div 
-            className="absolute h-1 bg-white/30 origin-left rounded-full"
+            className="absolute h-1 origin-left rounded-full"
             style={{
               left: grabPoint ? `calc(50% + ${grabPoint.x * (dimensions.width / 2)}px)` : '50%',
               top: grabPoint ? `calc(50% + ${grabPoint.y * (dimensions.height / 2)}px)` : '50%',
               width: `${Math.min(distance, dynamicRadius * 1.2)}px`,
               transform: `rotate(${(Math.atan2(dragOffset.y, dragOffset.x) * 180) / Math.PI}deg)`,
+              backgroundColor: activeBorderColor ? activeBorderColor + "80" : "#FFFFFF30",
             }}
           />
         )}
