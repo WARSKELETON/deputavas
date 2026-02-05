@@ -407,7 +407,7 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-12 relative z-10">
-        <div className="w-full max-w-[380px] flex flex-col items-center gap-8">
+        <div className="w-full max-w-[380px] flex flex-col items-center gap-6">
           <div className="relative w-full aspect-3/4">
             <SwipeCard
               deputy={currentDeputy}
@@ -440,36 +440,18 @@ export default function Home() {
             />
           </div>
 
-          <div className="w-full flex flex-col items-center shrink-0">
-            {round === "bloc" && (
-              <div className="flex flex-col items-center w-full">
-                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400">
-                  Desliza para adivinhar
-                </p>
-              </div>
-            )}
-
-            {round === "party" && (
-              <div className="flex flex-col items-center w-full">
-                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-400">
-                  Desliza para adivinhar o partido
-                </p>
-              </div>
-            )}
-
-            {round === "reveal" && (
-              <div className="flex flex-col items-center gap-8 w-full animate-in fade-in zoom-in-95 duration-500">
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="w-full max-w-[280px] rounded-4xl bg-[#1A1A1B] py-4 text-[9px] font-black uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-95 hover:bg-zinc-800 flex items-center justify-center gap-2"
-                >
-                  Próximo Deputado
-                  <span className="text-base">→</span>
-                </button>
-              </div>
-            )}
-          </div>
+          {round === "reveal" && (<div className="w-full flex flex-col items-center shrink-0">
+            <div className="flex flex-col items-center gap-8 w-full animate-in fade-in zoom-in-95 duration-500">
+              <button
+                type="button"
+                onClick={handleNext}
+                className="w-full max-w-[280px] rounded-4xl bg-[#1A1A1B] py-4 text-[9px] font-black uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-95 hover:bg-zinc-800 flex items-center justify-center gap-2"
+              >
+                Próximo Deputado
+                <span className="text-base">→</span>
+              </button>
+            </div>
+          </div>)}
 
           {guesses.length >= 2 && (
             <button
@@ -480,11 +462,33 @@ export default function Home() {
               Deputa um amigo teu
             </button>
           )}
+
+          <section className="w-full max-w-[380px] rounded-3xl border border-zinc-200 bg-white/80 p-6 text-center shadow-md shadow-zinc-200/40">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">
+              Sobre o Deputavas
+            </h2>
+            <p className="mt-3 text-sm text-zinc-700">
+              Somos dois jovens portugueses a tentar tornar a política mais acessível e
+              divertida. O Deputavas é um jogo educativo para descobrires os partidos e
+              deputados de forma leve e rápida.
+            </p>
+            <p className="mt-3 text-xs text-zinc-500">
+              Projeto independente, sem afiliação partidária.
+            </p>
+            <a
+              href="https://buymeacoffee.com/deputavas"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center justify-center rounded-2xl bg-[#1A1A1B] px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-all hover:bg-zinc-800 active:scale-95"
+            >
+              Oferece um donativo
+            </a>
+          </section>
         </div>
       </main>
 
       {/* Ad break interstitial - every 5 guesses */}
-      {showAdBreak && process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
+      {/* {showAdBreak && process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-6">
           <div className="w-full max-w-sm rounded-4xl bg-white p-8 text-center shadow-2xl">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-4">
@@ -504,7 +508,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {isComplete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-6">
