@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import ShareActions from "./ShareActions";
 import { partyMeta, type Party } from "@/src/data/parties";
 import { useGame, type Guess } from "@/src/context/GameContext";
@@ -306,6 +306,7 @@ function GuessResultPills({ guess }: { guess: Guess }) {
 
 function MiniCards({ guesses, kind = "deputy" }: { guesses: Guess[]; kind?: "deputy" | "project" }) {
   const lastGuesses = useMemo(() => guesses.slice(-4).reverse(), [guesses]);
+  const [activeProject, setActiveProject] = useState<{ title: string; party: Party } | null>(null);
   const projectsById = useMemo(() => {
     return new Map(
       projetosLeiData.map((project) => [project.id, project])
@@ -318,56 +319,111 @@ function MiniCards({ guesses, kind = "deputy" }: { guesses: Guess[]; kind?: "dep
   }, []);
 
   return (
-    <div className="grid grid-cols-2 gap-3 w-full">
-      {lastGuesses.map((guess, i) => {
-        const deputy = deputiesById.get(guess.id);
-        const project = projectsById.get(guess.id);
-        const isProject = kind === "project";
+    <>
+      <div className="grid grid-cols-2 gap-3 w-full">
+        {lastGuesses.map((guess, i) => {
+          const deputy = deputiesById.get(guess.id);
+          const project = projectsById.get(guess.id);
+          const isProject = kind === "project";
+          const cardKey = `${guess.id}-${i}`;
+          const projectTitle = project?.title ?? guess.name;
 
-        return (
-          <div
-            key={guess.id + i}
-            style={{ backgroundColor: partyMeta[guess.party]?.color + (isProject ? "1A" : "") }}
-            className={`relative aspect-3/4 rounded-2xl overflow-hidden border-4 shadow-sm ${guess.isPartyCorrect ? "border-emerald-500" : "border-rose-500"} ${isProject ? "p-3 flex flex-col" : ""}`}
-          >
-            {isProject ? (
-              <>
+          return (
+            <div
+              key={cardKey}
+              style={{ backgroundColor: partyMeta[guess.party]?.color + (isProject ? "1A" : "") }}
+              className={`relative aspect-3/4 rounded-2xl overflow-hidden border-4 shadow-sm ${guess.isPartyCorrect ? "border-emerald-500" : "border-rose-500"} ${isProject ? "p-3 flex flex-col" : ""}`}
+            >
+              {isProject ? (
+                <>
                 <p className="text-[8px] font-black uppercase tracking-[0.16em] text-zinc-500">
                   Projeto de Lei
                 </p>
-                <p className="mt-2 text-[11px] leading-snug font-bold text-zinc-900 line-clamp-8">
-                  {project?.title ?? guess.name}
+                <p className="mt-2 text-[11px] leading-snug font-bold text-zinc-900 line-clamp-6">
+                  {projectTitle}
                 </p>
-                <div className="mt-auto flex items-center justify-between pt-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveProject({ title: projectTitle, party: guess.party })}
+                  className="mt-2 self-start text-[9px] font-black uppercase tracking-[0.12em] text-zinc-600 underline"
+                >
+                  Lê mais
+                </button>
+                <div className="mt-auto flex items-center justify-between pt-2">
                   <GuessResultPills guess={guess} />
                   <img src={partyMeta[guess.party].logo} alt={guess.party} className="w-6 h-6 object-contain" />
                 </div>
-              </>
-            ) : (
-              <>
-                {deputy && (
-                  <img
-                    src={deputy.photoUrl}
-                    alt={deputy.name}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-[8px] font-black text-white truncate uppercase tracking-tighter">
-                    {guess.name}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <GuessResultPills guess={guess} />
-                    <img src={partyMeta[guess.party].logo} alt={guess.party} className="w-6 h-6 object-contain" />
+                </>
+              ) : (
+                <>
+                  {deputy && (
+                    <img
+                      src={deputy.photoUrl}
+                      alt={deputy.name}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <p className="text-[8px] font-black text-white truncate uppercase tracking-tighter">
+                      {guess.name}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <GuessResultPills guess={guess} />
+                      <img src={partyMeta[guess.party].logo} alt={guess.party} className="w-6 h-6 object-contain" />
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {activeProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div
+            className="w-full max-w-md rounded-3xl border-4 bg-white shadow-2xl overflow-hidden"
+            style={{ borderColor: partyMeta[activeProject.party].color }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ backgroundColor: `${partyMeta[activeProject.party].color}22` }}
+            >
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-600">
+                  Projeto de Lei
+                </p>
+                <p className="mt-1 text-sm font-black text-zinc-900">
+                  {partyMeta[activeProject.party].label}
+                </p>
+              </div>
+              <img
+                src={partyMeta[activeProject.party].logo}
+                alt={partyMeta[activeProject.party].label}
+                className="h-10 w-16 object-contain"
+              />
+            </div>
+
+            <div className="p-6">
+              <div className="max-h-[55vh] overflow-y-auto pr-1">
+                <p className="text-base font-bold leading-relaxed text-zinc-900">
+                  {activeProject.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveProject(null)}
+                className="mt-6 w-full rounded-2xl py-3 text-xs font-black uppercase tracking-[0.12em] text-white"
+                style={{ backgroundColor: partyMeta[activeProject.party].color }}
+              >
+                Fechar
+              </button>
+            </div>
           </div>
-        );
-      })}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 

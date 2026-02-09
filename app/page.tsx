@@ -37,7 +37,7 @@ type ProjetoLei = {
 
 type GameCard = Deputy | ProjetoLei;
 
-const PROJECT_CARD_INTERVAL = 8;
+const PROJECT_CARD_INTERVAL = 3;
 
 function seededRandom(seed: number) {
   let t = seed + 0x6d2b79f5;
@@ -547,8 +547,7 @@ export default function Home() {
             </h2>
             <p className="mt-3 text-sm text-zinc-700">
               Somos dois jovens portugueses a tentar tornar a política mais acessível e
-              divertida. O Deputavas é um jogo educativo para descobrires os partidos e
-              deputados de forma leve e rápida.
+              divertida. O Deputavas é um jogo educativo para conheceres os partidos de forma leve e rápida.
             </p>
             <p className="mt-3 text-xs text-zinc-500">
               Projeto independente, sem afiliação partidária.
