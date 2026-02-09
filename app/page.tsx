@@ -481,7 +481,7 @@ export default function Home() {
               rel="noreferrer"
               className="mt-4 inline-flex items-center justify-center rounded-2xl bg-[#1A1A1B] px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-white transition-all hover:bg-zinc-800 active:scale-95"
             >
-              Oferece um donativo
+              Oferece-nos um café
             </a>
           </section>
         </div>
