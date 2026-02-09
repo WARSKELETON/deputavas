@@ -537,7 +537,7 @@ export default function Home() {
               onClick={handleShareResults}
               className="w-full max-w-[280px] rounded-4xl border-2 py-4 text-xs font-black uppercase tracking-[0.3em] text-zinc-900 animate-pulsate-party transition-all active:scale-95"
             >
-              Deputa um amigo teu
+              Vê o teu resultado
             </button>
           )}
 
