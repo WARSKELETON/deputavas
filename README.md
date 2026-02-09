@@ -39,6 +39,28 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Scrapers
+
+### Deputados
+
+```bash
+npm run scrape:deputados
+```
+
+### Projetos de Lei (Legislatura XVII, Sessao 1)
+
+```bash
+npm run scrape:projetos-lei
+```
+
+Optional overrides:
+
+```bash
+LEGISLATURE=XVII SESSION=1 TYPE="Projeto de Lei" EXPECTED_TOTAL=410 KEEP_EXISTING=1 npm run scrape:projetos-lei
+```
+
+The scraper writes to `src/data/projetos-lei.json`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

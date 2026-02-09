@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePostHog } from "posthog-js/react";
 
 import deputados from "@/src/data/deputados.json";
+import projetosLei from "@/src/data/projetos-lei.json";
 import { partyMeta, type Bloc, type Party } from "@/src/data/parties";
 import SwipeCard from "@/src/components/SwipeCard";
 import { useGame, type Guess } from "@/src/context/GameContext";
@@ -14,12 +15,29 @@ import AdBanner from "@/src/components/AdBanner";
 import { clearGameState } from "@/src/utils/gameStorage";
 
 type Deputy = {
+  type: "deputy";
   id: string;
   name: string;
   party: string;
   legislature: string;
   photoUrl: string;
 };
+
+type ProjetoLei = {
+  type: "project";
+  id: string;
+  name: string;
+  projectType: string;
+  number: string;
+  legislature: string;
+  session: string;
+  party: Party;
+  title: string;
+};
+
+type GameCard = Deputy | ProjetoLei;
+
+const PROJECT_CARD_INTERVAL = 8;
 
 function seededRandom(seed: number) {
   let t = seed + 0x6d2b79f5;
@@ -39,6 +57,26 @@ function shuffleWithSeed<T>(items: T[], seed: number) {
 
 function getBlocForParty(party: Party) {
   return partyMeta[party]?.bloc ?? "left";
+}
+
+function isParty(value: string): value is Party {
+  return value in partyMeta;
+}
+
+function buildDeck(deputyItems: Deputy[], projectItems: ProjetoLei[]) {
+  const deck: GameCard[] = [];
+  let projectIndex = 0;
+
+  for (let i = 0; i < deputyItems.length; i += 1) {
+    deck.push(deputyItems[i]);
+    const shouldInsertProject = (i + 1) % PROJECT_CARD_INTERVAL === 0;
+    if (shouldInsertProject && projectIndex < projectItems.length) {
+      deck.push(projectItems[projectIndex]);
+      projectIndex += 1;
+    }
+  }
+
+  return deck;
 }
 
 const GAME_STATE_STORAGE_KEY = "deputavasGameState";
@@ -88,7 +126,7 @@ function saveGameState(state: GameState) {
 export default function Home() {
   const router = useRouter();
   const posthog = usePostHog();
-  const { guesses, addGuess, clearGuesses } = useGame();
+  const { guesses, projectGuesses, addGuess, addProjectGuess, clearGuesses } = useGame();
 
   // State initialization with defaults for SSR
   const [clientSeed, setClientSeed] = useState<number | null>(null);
@@ -128,10 +166,43 @@ export default function Home() {
 
   const deck = useMemo(() => {
     const seed = clientSeed ?? 0;
-    return shuffleWithSeed(deputados as Deputy[], seed);
+    const deputyDeck = shuffleWithSeed(
+      (deputados as Omit<Deputy, "type">[]).map((deputy) => ({
+        ...deputy,
+        type: "deputy" as const,
+      })),
+      seed
+    );
+
+    const filteredProjects = (projetosLei as Array<{
+      id: string;
+      type: string;
+      number: string;
+      legislature: string;
+      session: string;
+      party: string;
+      title: string;
+    }>).filter((project) => isParty(project.party));
+
+    const projectDeck = shuffleWithSeed(
+      filteredProjects.map((project) => ({
+        type: "project" as const,
+        id: project.id,
+        name: project.number,
+        projectType: project.type,
+        number: project.number,
+        legislature: project.legislature,
+        session: project.session,
+        party: project.party as Party,
+        title: project.title,
+      })),
+      seed + 997
+    );
+
+    return buildDeck(deputyDeck, projectDeck);
   }, [clientSeed]);
 
-  const currentDeputy = deck[currentIndex];
+  const currentCard = deck[currentIndex];
   const total = deck.length;
 
   // Save game state whenever it changes
@@ -168,7 +239,7 @@ export default function Home() {
     ? Math.round((partyCorrect / guesses.length) * 100)
     : 0;
 
-  const actualParty = currentDeputy?.party as Party;
+  const actualParty = currentCard?.party as Party | undefined;
   const actualBloc = actualParty ? getBlocForParty(actualParty) : null;
 
   const allPartyOptions = useMemo(() => [
@@ -205,11 +276,12 @@ export default function Home() {
   }, [round, blocGuess, lastResult, allPartyOptions]);
 
   const handleBlocSelect = (bloc: Bloc) => {
-    if (round !== "bloc") return;
+    if (round !== "bloc" || !currentCard) return;
     posthog.capture('bloc_guessed', {
       bloc,
-      deputy_id: currentDeputy?.id,
-      deputy_name: currentDeputy?.name
+      card_type: currentCard.type,
+      card_id: currentCard.id,
+      card_name: currentCard.name
     });
     setBlocGuess(bloc);
     setRound("party");
@@ -236,7 +308,7 @@ export default function Home() {
   }, [blocGuess, lastResult]);
 
   const handlePartySelect = (party: Party) => {
-    if (round !== "party" || !blocGuess || !currentDeputy || !actualBloc || !actualParty) return;
+    if (round !== "party" || !blocGuess || !currentCard || !actualBloc || !actualParty) return;
     const isBlocCorrect = blocGuess === actualBloc;
     const isPartyCorrect = party === actualParty;
 
@@ -247,13 +319,15 @@ export default function Home() {
       bloc_actual: actualBloc,
       is_bloc_correct: isBlocCorrect,
       is_party_correct: isPartyCorrect,
-      deputy_id: currentDeputy.id,
-      deputy_name: currentDeputy.name
+      card_type: currentCard.type,
+      card_id: currentCard.id,
+      card_name: currentCard.type === "project" ? currentCard.number : currentCard.name
     });
 
     const result: Guess = {
-      id: currentDeputy.id,
-      name: currentDeputy.name,
+      id: currentCard.id,
+      name: currentCard.type === "project" ? currentCard.number : currentCard.name,
+      type: currentCard.type,
       party: actualParty,
       bloc: actualBloc,
       blocGuess,
@@ -261,7 +335,8 @@ export default function Home() {
       isBlocCorrect,
       isPartyCorrect,
     };
-    addGuess(result);
+    if (currentCard.type === "deputy") addGuess(result);
+    else addProjectGuess(result);
     setLastResult(result);
     setRound("reveal");
   };
@@ -298,8 +373,11 @@ export default function Home() {
     if (guesses.length > 0) {
       url.searchParams.set("g", encodeGuesses(guesses));
     }
+    if (projectGuesses.length > 0) {
+      url.searchParams.set("pg", encodeGuesses(projectGuesses));
+    }
     return url.toString();
-  }, [partyCorrect, guesses, accuracy]);
+  }, [partyCorrect, guesses, projectGuesses, accuracy]);
 
   const handleShareResults = useCallback(() => {
     const shareUrl = buildShareUrl();
@@ -375,7 +453,7 @@ export default function Home() {
     );
   }
 
-  if (!currentDeputy) {
+  if (!currentCard) {
     return null;
   }
 
@@ -410,7 +488,7 @@ export default function Home() {
         <div className="w-full max-w-[380px] flex flex-col items-center gap-6">
           <div className="relative w-full aspect-3/4">
             <SwipeCard
-              deputy={currentDeputy}
+              card={currentCard}
               showParty={round === "reveal"}
               isCorrect={lastResult?.isPartyCorrect}
               options={currentOptions}
@@ -447,7 +525,7 @@ export default function Home() {
                 onClick={handleNext}
                 className="w-full max-w-[280px] rounded-4xl bg-[#1A1A1B] py-4 text-[9px] font-black uppercase tracking-[0.3em] text-white shadow-2xl transition-all active:scale-95 hover:bg-zinc-800 flex items-center justify-center gap-2"
               >
-                Próximo Deputado
+                Próxima Carta
                 <span className="text-base">→</span>
               </button>
             </div>

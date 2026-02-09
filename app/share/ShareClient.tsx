@@ -8,6 +8,7 @@ import { partyMeta, type Party } from "@/src/data/parties";
 import { useGame, type Guess } from "@/src/context/GameContext";
 import { decodeGuesses } from "@/src/utils/encoding";
 import deputadosData from "@/src/data/deputados.json";
+import projetosLeiData from "@/src/data/projetos-lei.json";
 
 function parseNumber(value: string | null) {
   if (!value) return null;
@@ -286,43 +287,83 @@ function QuadrantChart({ guesses }: { guesses: Guess[] }) {
   );
 }
 
-function MiniCards({ guesses }: { guesses: Guess[] }) {
+function GuessResultPills({ guess }: { guess: Guess }) {
+  return (
+    <div className="mt-1 flex items-center gap-1">
+      <div
+        className={`px-1.5 py-0.5 rounded-[4px] text-[6px] font-black text-white ${guess.isPartyCorrect ? "bg-emerald-500" : "bg-rose-500"}`}
+      >
+        {guess.partyGuess}
+      </div>
+      {!guess.isPartyCorrect && (
+        <div className="px-1.5 py-0.5 rounded-[4px] text-[6px] font-black bg-white text-zinc-900">
+          {guess.party}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MiniCards({ guesses, kind = "deputy" }: { guesses: Guess[]; kind?: "deputy" | "project" }) {
   const lastGuesses = useMemo(() => guesses.slice(-4).reverse(), [guesses]);
+  const projectsById = useMemo(() => {
+    return new Map(
+      projetosLeiData.map((project) => [project.id, project])
+    );
+  }, []);
+  const deputiesById = useMemo(() => {
+    return new Map(
+      deputadosData.map((deputy) => [deputy.id, deputy])
+    );
+  }, []);
 
   return (
     <div className="grid grid-cols-2 gap-3 w-full">
       {lastGuesses.map((guess, i) => {
-        const deputy = deputadosData.find(d => d.id === guess.id);
+        const deputy = deputiesById.get(guess.id);
+        const project = projectsById.get(guess.id);
+        const isProject = kind === "project";
+
         return (
-          <div key={guess.id + i} style={{ backgroundColor: partyMeta[guess.partyGuess]?.color }} className={`relative aspect-3/4 rounded-2xl overflow-hidden border-4 shadow-sm ${guess.isPartyCorrect ? 'border-emerald-500' : 'border-rose-500'}`}>
-            {deputy && (
-              <img 
-                src={deputy.photoUrl} 
-                alt={deputy.name}
-                className="w-full h-full object-cover"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            <div className="absolute bottom-2 left-2 right-2">
-              <p className="text-[8px] font-black text-white truncate uppercase tracking-tighter">
-                {guess.name}
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="mt-1 flex items-center gap-1">
-                  <div 
-                    className={`px-1.5 py-0.5 rounded-[4px] text-[6px] font-black text-white ${guess.isPartyCorrect ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                  >
-                    {guess.partyGuess}
-                  </div>
-                  {!guess.isPartyCorrect && (
-                    <div className="px-1.5 py-0.5 rounded-[4px] text-[6px] font-black bg-white text-zinc-900">
-                      {guess.party}
-                    </div>
-                  )}
+          <div
+            key={guess.id + i}
+            style={{ backgroundColor: partyMeta[guess.party]?.color + (isProject ? "1A" : "") }}
+            className={`relative aspect-3/4 rounded-2xl overflow-hidden border-4 shadow-sm ${guess.isPartyCorrect ? "border-emerald-500" : "border-rose-500"} ${isProject ? "p-3 flex flex-col" : ""}`}
+          >
+            {isProject ? (
+              <>
+                <p className="text-[8px] font-black uppercase tracking-[0.16em] text-zinc-500">
+                  Projeto de Lei
+                </p>
+                <p className="mt-2 text-[11px] leading-snug font-bold text-zinc-900 line-clamp-8">
+                  {project?.title ?? guess.name}
+                </p>
+                <div className="mt-auto flex items-center justify-between pt-3">
+                  <GuessResultPills guess={guess} />
+                  <img src={partyMeta[guess.party].logo} alt={guess.party} className="w-6 h-6 object-contain" />
                 </div>
-                <img src={partyMeta[guess.partyGuess].logo} alt={guess.partyGuess} className="w-6 h-6 object-contain" />
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                {deputy && (
+                  <img
+                    src={deputy.photoUrl}
+                    alt={deputy.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="text-[8px] font-black text-white truncate uppercase tracking-tighter">
+                    {guess.name}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <GuessResultPills guess={guess} />
+                    <img src={partyMeta[guess.party].logo} alt={guess.party} className="w-6 h-6 object-contain" />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
       })}
@@ -335,7 +376,7 @@ export default function ShareClient() {
   const hasUtmParamsSet = useMemo(() => {
     return searchParams.get("utm_source") !== null && searchParams.get("utm_medium") !== null && searchParams.get("utm_campaign") !== null && searchParams.get("ref") !== null;
   }, [searchParams]);
-  const { guesses: contextGuesses } = useGame();
+  const { guesses: contextGuesses, projectGuesses: contextProjectGuesses } = useGame();
   
   const score = parseNumber(searchParams.get("score"));
   const total = parseNumber(searchParams.get("total"));
@@ -348,11 +389,18 @@ export default function ShareClient() {
   const accuracyValue = Math.min(100, Math.max(0, Math.round(computedAccuracy ?? 0)));
 
   const displayGuesses = useMemo(() => {
-    const urlGuesses = decodeGuesses(searchParams.get("g"));
+    const urlGuesses = decodeGuesses(searchParams.get("g")).filter((guess) => guess.type !== "project");
     if (urlGuesses.length > 0) return urlGuesses;
     if (contextGuesses.length > 0) return contextGuesses;
     return [];
   }, [contextGuesses, searchParams]);
+
+  const displayProjectGuesses = useMemo(() => {
+    const urlProjectGuesses = decodeGuesses(searchParams.get("pg")).filter((guess) => guess.type === "project");
+    if (urlProjectGuesses.length > 0) return urlProjectGuesses;
+    if (contextProjectGuesses.length > 0) return contextProjectGuesses;
+    return [];
+  }, [contextProjectGuesses, searchParams]);
 
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -441,6 +489,15 @@ export default function ShareClient() {
               </h2>
               <MiniCards guesses={displayGuesses} />
             </section>
+
+            {displayProjectGuesses.length > 0 && (
+              <section className="rounded-[2.5rem] border border-zinc-100 bg-white p-8 shadow-xl shadow-zinc-200/50">
+                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6">
+                  Últimos Projetos de Lei
+                </h2>
+                <MiniCards guesses={displayProjectGuesses} kind="project" />
+              </section>
+            )}
 
             <section className="rounded-[2.5rem] border border-zinc-100 bg-white p-8 shadow-xl shadow-zinc-200/50">
               <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6">

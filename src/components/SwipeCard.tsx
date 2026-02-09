@@ -4,11 +4,25 @@ import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 
 import { partyMeta, type Party } from "@/src/data/parties";
 
-type Deputy = {
+type DeputyCard = {
+  type: "deputy";
   name: string;
   party: string;
   photoUrl: string;
 };
+
+type ProjectCard = {
+  type: "project";
+  name: string;
+  party: string;
+  number: string;
+  legislature: string;
+  session: string;
+  title: string;
+  projectType: string;
+};
+
+type GameCard = DeputyCard | ProjectCard;
 
 type SwipeOption = {
   id: string;
@@ -24,7 +38,7 @@ type PersistentSelection = {
 };
 
 type SwipeCardProps = {
-  deputy: Deputy;
+  card: GameCard;
   showParty: boolean;
   isCorrect?: boolean;
   className?: string;
@@ -47,7 +61,7 @@ function getInitials(name: string) {
 }
 
 export default function SwipeCard({
-  deputy,
+  card,
   showParty,
   isCorrect,
   className,
@@ -59,7 +73,7 @@ export default function SwipeCard({
   selectionOverlay,
   persistentSelections,
 }: SwipeCardProps) {
-  const [imageError, setImageError] = useState(false);
+  const [failedImageSrc, setFailedImageSrc] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -79,7 +93,7 @@ export default function SwipeCard({
   }, []);
 
   useEffect(() => {
-    // Reset idle timer when deputy changes or effect reinitializes
+    // Reset idle timer when card changes or effect reinitializes
     lastActivityRef.current = Date.now();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsIdle(false);
@@ -92,7 +106,7 @@ export default function SwipeCard({
     }, 1000);
 
     return () => clearInterval(checkIdle);
-  }, [isDragging, showParty, disabled, deputy]);
+  }, [isDragging, showParty, disabled, card]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -114,8 +128,17 @@ export default function SwipeCard({
     return minDim * 0.55; // Pushes bubbles to the edges/outside
   }, [dimensions]);
 
-  const partyInfo = partyMeta[deputy.party as Party];
-  const initials = useMemo(() => getInitials(deputy.name), [deputy.name]);
+  const partyInfo = partyMeta[card.party as Party];
+  const initials = useMemo(() => getInitials(card.name), [card.name]);
+  const hasImageError = card.type === "deputy" && failedImageSrc === card.photoUrl;
+  const projectTitleClassName = useMemo(() => {
+    if (card.type !== "project") return "";
+    const titleLength = card.title.length;
+    if (titleLength >= 300) return "text-sm leading-normal";
+    if (titleLength >= 220) return "text-base leading-snug";
+    if (titleLength >= 150) return "text-lg leading-snug";
+    return "text-2xl leading-tight";
+  }, [card]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (disabled || showParty) return;
@@ -330,18 +353,29 @@ export default function SwipeCard({
             </div>
           )}
 
-          {imageError ? (
-            <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-zinc-400">
-              {initials}
-            </div>
+          {card.type === "deputy" ? (
+            hasImageError ? (
+              <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-zinc-400">
+                {initials}
+              </div>
+            ) : (
+              <img
+                src={card.photoUrl}
+                alt={`Foto de ${card.name}`}
+                className="h-full w-full object-cover object-top select-none pointer-events-none"
+                onError={() => setFailedImageSrc(card.photoUrl)}
+                loading="lazy"
+              />
+            )
           ) : (
-            <img
-              src={deputy.photoUrl}
-              alt={`Foto de ${deputy.name}`}
-              className="h-full w-full object-cover object-top select-none pointer-events-none"
-              onError={() => setImageError(true)}
-              loading="lazy"
-            />
+            <div className="flex h-full w-full flex-col bg-gradient-to-b from-zinc-100 via-zinc-50 to-white p-6">
+              <div className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500 self-start">
+                {card.projectType}
+              </div>
+              <h2 className={`mt-5 font-black leading-tight tracking-tight text-zinc-900 ${projectTitleClassName}`}>
+                {card.title}
+              </h2>
+            </div>
           )}
 
           {/* Selection Label Overlay */}
@@ -388,10 +422,15 @@ export default function SwipeCard({
                 </span>
               </div>
               
-              <h2 className="text-4xl font-black tracking-tighter uppercase italic drop-shadow-lg">
-                {deputy.name}
+              <h2 className={`font-black tracking-tighter uppercase italic drop-shadow-lg ${card.type === "project" ? "text-2xl" : "text-4xl"}`}>
+                {card.type === "project" ? card.projectType : card.name}
               </h2>
               <div className="mt-4 h-px w-12 bg-white/40" />
+              {card.type === "project" && (
+                <p className="mt-4 max-w-xs text-xs font-semibold leading-relaxed opacity-90">
+                  {card.title}
+                </p>
+              )}
               <p className="mt-4 text-2xl font-black uppercase tracking-widest opacity-90 drop-shadow-md">
                 {partyInfo?.label}
               </p>
@@ -406,4 +445,3 @@ export default function SwipeCard({
     </div>
   );
 }
-
