@@ -17,14 +17,13 @@ export default function ShareActions({
   const [copied, setCopied] = useState(false);
   const posthog = usePostHog();
 
-  const handleCopy = async () => {
-    posthog.capture("share_action_clicked", { action: "copy" });
+  const copyToClipboard = async (value: string) => {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(value);
       } else {
         const textarea = document.createElement("textarea");
-        textarea.value = shareUrl;
+        textarea.value = value;
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
         document.body.appendChild(textarea);
@@ -32,9 +31,23 @@ export default function ShareActions({
         document.execCommand("copy");
         document.body.removeChild(textarea);
       }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      return true;
     } catch {
+      return false;
+    }
+  };
+
+  const markCopied = () => {
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  const handleCopy = async () => {
+    posthog.capture("share_action_clicked", { action: "copy" });
+    const didCopy = await copyToClipboard(shareUrl);
+    if (didCopy) {
+      markCopied();
+    } else {
       setCopied(false);
     }
   };
@@ -72,6 +85,7 @@ export default function ShareActions({
 
   const twitterShareUrl = addUtmParams(shareUrl, "twitter");
   const whatsappShareUrl = addUtmParams(shareUrl, "whatsapp");
+  const instagramShareUrl = addUtmParams(shareUrl, "instagram_story");
 
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     text
@@ -79,6 +93,31 @@ export default function ShareActions({
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
     `${text} ${whatsappShareUrl}`
   )}`;
+
+  const handleInstagramStoryShare = async () => {
+    if (typeof window === "undefined") return;
+
+    posthog.capture("share_action_clicked", { action: "instagram_story" });
+    const didCopy = await copyToClipboard(instagramShareUrl);
+    if (didCopy) {
+      markCopied();
+    }
+
+    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      window.open("https://www.instagram.com/", "_blank", "noreferrer");
+      return;
+    }
+
+    const fallbackTimeout = window.setTimeout(() => {
+      if (!document.hidden) {
+        window.location.href = "https://www.instagram.com/";
+      }
+    }, 1200);
+
+    window.location.href = "instagram://story-camera";
+    window.setTimeout(() => window.clearTimeout(fallbackTimeout), 1800);
+  };
 
   return (
     <div className="grid gap-3">
@@ -116,6 +155,13 @@ export default function ShareActions({
       >
         Partilhar no WhatsApp
       </a>
+      <button
+        type="button"
+        onClick={handleInstagramStoryShare}
+        className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-700 text-center transition hover:border-zinc-300 active:scale-95"
+      >
+        Criar Instagram Story com Link
+      </button>
     </div>
   );
 }
